@@ -1,0 +1,4 @@
+POST http://127.0.0.1:8000/weather/measure
+Content-Type: application/json
+
+{"date": "2022-12-25T11:25:39.265Z", "temperature": 23.2, "humidity": 80.2}

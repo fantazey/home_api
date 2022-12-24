@@ -1,0 +1,87 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <title>Weather</title>
+</head>
+<body>
+<div id="wrapper">
+  <div style="display: flex;flex-direction: column">
+    <div>
+      <canvas id="temperature" width="600" height="300"/>
+    </div>
+    <div>
+      <canvas id="humidity" width="600" height="300"/>
+    </div>
+  </div>
+
+  <script>
+    function setupChart(data) {
+        const t_ctx = document.getElementById('temperature').getContext('2d');
+        const t_config = {
+            type: 'line',
+            data: {
+                datasets: [
+                    {
+                        label: 'Температура в доме',
+                        data: data,
+                        backgroundColor: '#ff0000',
+                        parsing: {
+                            xAxisKey: 'date',
+                            yAxisKey: 'temperature'
+                        }
+                    }
+                ]
+            },
+            options: {
+                scales: {
+                    y: {
+                        min: 20,
+                        max: 40,
+                    }
+                }
+            }
+        };
+        const t_chart = new Chart(
+          t_ctx,
+          t_config
+        );
+
+        const h_ctx = document.getElementById('humidity').getContext('2d');
+        const h_config = {
+            type: 'line',
+            data: {
+                datasets: [
+                    {
+                        label: 'Влажность в доме',
+                        data: data,
+                        backgroundColor: '#0000ff',
+                        parsing: {
+                            xAxisKey: 'date',
+                            yAxisKey: 'humidity'
+                        }
+                    }
+                ]
+            },
+            options: {
+		scales: {
+			y: {
+				max: 100
+			}
+		}
+            }
+        };
+        const h_chart = new Chart(
+          h_ctx,
+          h_config
+        );
+    }
+    fetch("http://127.0.0.1:8000/weather/latest").then(data => data.json()).then(jsonData => setupChart(jsonData));
+  </script>
+</div>
+</body>
+</html>
