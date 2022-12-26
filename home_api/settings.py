@@ -32,6 +32,7 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     'weather.apps.WeatherConfig',
+    'work_in_progress.apps.WorkInProgressConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

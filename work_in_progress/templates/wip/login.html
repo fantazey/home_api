@@ -1,0 +1,26 @@
+{% extends 'wip/base.html' %}
+{% block content %}
+    <div class="ui five column doubling stackable grid container">
+        <div class="column"></div>
+        <div class="column"></div>
+        <div class="column">
+            <form action="/login" method="post" class="ui form">
+                    <div class="field">
+                        <label>username:</label>
+                        <input type="text" name="username">
+                    </div>
+                    <div class="small field">
+                        <label>password:</label>
+                        <input type="password" name="password">
+                    </div>
+                    <div>
+                        <button class="ui button" type="submit">Log in</button>
+                    </div>
+                    <div>
+                        <a href="/wip/register">register</a>
+                    </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock content %}

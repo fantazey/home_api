@@ -1,0 +1,19 @@
+{% extends 'wip/base.html' %}
+{% block content %}
+    <div style="display:flex; flex-direction: row; justify-content: center; align-content: center; margin-top: 100px">
+    <form action="/wip/register" method="post">
+        {% csrf_token %}
+        <div class="form" style="display: flex;flex-direction: column; color: wheat;">
+            <div class="form-row" style="display: flex; flex-direction: row;">
+                <label>username:</label><input type="text" name="username">
+            </div>
+            <div class="form-row" style="display: flex; flex-direction: row;">
+                <label>password:</label><input type="password" name="password">
+            </div>
+            <div class="form-row" style="display: flex; flex-direction: row;justify-content: flex-end">
+                <button type="submit">Register</button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
