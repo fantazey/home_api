@@ -1,0 +1,23 @@
+{% extends 'wip/base.html' %}
+{% block content %}
+<h2>
+    Прогресс по модели: {{ model.name }}
+</h2>
+<table class="celled ui table">
+<thead>
+<th>Название</th>
+<th>Подробно</th>
+<th>Дата</th>
+</thead>
+<tbody>
+    {% for progress in progress_items %}
+        <tr>
+            <td>{{ progress.title }}</td>
+            <td>{{ progress.description }}</td>
+            <td>{{ progress.datetime }}</td>
+            <td></td>
+        </tr>
+    {% endfor %}
+</tbody>
+</table>
+{% endblock %}

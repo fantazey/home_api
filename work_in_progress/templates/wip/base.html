@@ -8,7 +8,7 @@
 <body>
     {% if user.is_authenticated %}
     <div class="ui menu inverted item three">
-        <a class="item">Модели</a>
+        <a class="item" href="{% url 'wip:index' %}">Модели</a>
         <a class="item">Профиль {{ user.username }}</a>
         <a class="item" href="{% url 'wip:logout' %}">Выход</a>
     </div>

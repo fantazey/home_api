@@ -6,16 +6,22 @@
         <div class="column">
             <form action="{% url 'wip:register' %}" method="post" class="ui form">
                 {% csrf_token %}
-                <div class="field">
-                    <label>логин:</label>
-                    <input type="text" name="username">
+                <div class="field {{ form.username.errors|yesno:'error,' }}">
+                    <label>{{ form.username.label }}</label>
+                    {{ form.username }}
+                     {% if form.username.errors %}
+                        {{ form.username.errors }}
+                    {% endif %}
                 </div>
                 <div class="small field">
-                    <label>пароль:</label>
-                    <input type="password" name="password">
+                    <label>{{ form.password.label }}</label>
+                    {{ form.password }}
                 </div>
                 <div>
-                    <button class="ui button" type="submit">регистрация</button>
+                    <button class="ui button" type="submit">Регистрация</button>
+                </div>
+                <div>
+                    <a href="{% url 'wip:login' %}">Вход</a>
                 </div>
             </form>
         </div>

@@ -3,4 +3,25 @@
 <h2>
     Добавление модели в PileOfShame
 </h2>
+    <div class="ui five column doubling stackable grid container">
+        <div class="column"></div>
+        <div class="column">
+            <form action="{% url 'wip:add_model' %}" class="ui form" method="post">
+            {% csrf_token %}
+                <div class="field">
+                    <label>{{ form.name.label }}</label>
+                    {{ form.name }}
+                </div>
+                <div class="field">
+                    <label>{{ form.in_inventory.label }}</label>
+                    {{ form.in_inventory }}
+                </div>
+                <div class="field">
+                    <button class="ui button" type="submit">Добавить</button>
+                </div>
+            </form>
+        </div>
+        <div class="column"></div>
+        <div class="column"></div>
+    </div>
 {% endblock %}
