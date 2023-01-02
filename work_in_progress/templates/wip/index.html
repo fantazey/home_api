@@ -1,20 +1,28 @@
 {% extends 'wip/base.html' %}
 {% block content %}
 <h2>
-    привет {{ user.username }}
+    Привет {{ user.username }}
 </h2>
 <table class="celled ui table">
 <thead>
 <th>Название</th>
 <th>Статус</th>
 <th>Дата добавления</th>
+<th>Действия</th>
 </thead>
 <tbody>
+    <tr>
+        <td colspan="3"></td>
+        <td>
+            <a href="{% url 'add_model' %}">Добавить</a>
+        </td>
+    </tr>
     {% for model in models %}
         <tr>
             <td>{{ model.name }}</td>
             <td>{{ model.status }}</td>
             <td>{{ model.created }}</td>
+            <td></td>
         </tr>
     {% endfor %}
 </tbody>

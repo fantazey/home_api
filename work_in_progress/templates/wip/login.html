@@ -4,7 +4,7 @@
         <div class="column"></div>
         <div class="column"></div>
         <div class="column">
-            <form action="/wip/login" method="post" class="ui form">
+            <form action="{% url 'wip:login' %}" method="post" class="ui form">
                 {% csrf_token %}
                 <div class="field">
                     <label>логин:</label>
@@ -18,7 +18,7 @@
                     <button class="ui button" type="submit">вход</button>
                 </div>
                 <div>
-                    <a href="/wip/register">регистрация</a>
+                    <a href="{% url 'wip:register' %}">регистрация</a>
                 </div>
             </form>
         </div>

@@ -15,6 +15,11 @@ def index(request):
         return render(request, 'wip/login.html')
 
 
+def add_model(request):
+    if request.method == 'GET':
+        return render(request, 'wip/add_model.html')
+
+
 def log_in(request):
     if request.method == 'GET':
         return render(request, 'wip/login.html')

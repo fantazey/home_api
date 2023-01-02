@@ -10,7 +10,7 @@
     <div class="ui menu inverted item three">
         <a class="item">Модели</a>
         <a class="item">Профиль {{ user.username }}</a>
-        <a class="item" href="/wip/logout">Выход</a>
+        <a class="item" href="{% url 'wip:logout' %}">Выход</a>
     </div>
     {% endif %}
 {% block content %}
