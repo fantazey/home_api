@@ -56,8 +56,7 @@ ROOT_URLCONF = 'home_api.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates']
-        ,
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -78,6 +77,21 @@ WSGI_APPLICATION = 'home_api.wsgi.application'
 
 DATABASES = {
     'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'homeapi',
+        'USER': 'homeapi',
+        'PASSWORD': 'homeapi',
+        'HOST': 'pi',
+        'PORT': '5432',
+    },
+    'default_service-file': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'OPTIONS': {
+            'service': 'home_api',
+            'passfile': '.pgpass'
+        }
+    },
+    'local': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
