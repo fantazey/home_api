@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 
 
 class Model(models.Model):
-    class ModelStatus(models.TextChoices):
+    class Status(models.TextChoices):
         WISHED = 'washed', 'Лежит в магазине'
         IN_INVENTORY = 'in_inventory', 'Куплено'
         ASSEMBLING = 'assembling', 'Собирается'
@@ -14,9 +14,11 @@ class Model(models.Model):
         VARNISHING = 'varnishing', 'Задуваю лаком'
         DONE = 'done', 'Закончено'
 
-    name = models.CharField(name="Название модели", max_length=500)
-    status = models.CharField(name="Статус", max_length=200, choices=ModelStatus.choices, default=ModelStatus.WISHED)
-    user = models.ForeignKey(User, related_name="Пользователь", on_delete=models.RESTRICT)
+    name = models.CharField(verbose_name="Название модели", max_length=500)
+    status = models.CharField(verbose_name="Статус", max_length=200, choices=Status.choices, default=Status.WISHED)
+    user = models.ForeignKey(User, verbose_name="Пользователь", on_delete=models.RESTRICT)
+    created = models.DateTimeField(verbose_name="Дата создания", auto_now_add=True, null=False, blank=False)
+    updated = models.DateTimeField(verbose_name="Дата обновления", auto_now=True, null=False, blank=False)
 
     def __str__(self):
         return "%s - %s" % (self.name, self.status)
@@ -26,8 +28,8 @@ class Model(models.Model):
 
 
 class ModelProgress(models.Model):
-    title = models.CharField(name="Описание выполненной работы", max_length=500)
-    description = models.TextField(name="Подробности выполнененной работы")
-    datetime = models.DateTimeField(name="Дата записи")
-    model = models.ForeignKey(Model, on_delete=models.RESTRICT, related_name="Прогресс")
+    title = models.CharField(verbose_name="Описание выполненной работы", max_length=500)
+    description = models.TextField(verbose_name="Подробности выполнененной работы")
+    datetime = models.DateTimeField(verbose_name="Дата записи")
+    model = models.ForeignKey(Model, on_delete=models.RESTRICT, verbose_name="Прогресс")
 

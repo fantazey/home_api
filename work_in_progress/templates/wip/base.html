@@ -6,14 +6,13 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/1.11.8/semantic.min.js"></script>
 </head>
 <body>
-<div class="ui attached stackable menu">
-    <div class="ui container">
-        <a class="item">item 1</a>
-        <a class="item">item 2</a>
-        <a class="item">item 3</a>
-        <a class="item">item 4</a>
+    {% if user.is_authenticated %}
+    <div class="ui menu inverted item three">
+        <a class="item">Модели</a>
+        <a class="item">Профиль {{ user.username }}</a>
+        <a class="item" href="/wip/logout">Выход</a>
     </div>
-</div>
+    {% endif %}
 {% block content %}
 {% endblock content %}
 </body>

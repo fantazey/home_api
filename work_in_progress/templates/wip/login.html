@@ -4,21 +4,22 @@
         <div class="column"></div>
         <div class="column"></div>
         <div class="column">
-            <form action="/login" method="post" class="ui form">
-                    <div class="field">
-                        <label>username:</label>
-                        <input type="text" name="username">
-                    </div>
-                    <div class="small field">
-                        <label>password:</label>
-                        <input type="password" name="password">
-                    </div>
-                    <div>
-                        <button class="ui button" type="submit">Log in</button>
-                    </div>
-                    <div>
-                        <a href="/wip/register">register</a>
-                    </div>
+            <form action="/wip/login" method="post" class="ui form">
+                {% csrf_token %}
+                <div class="field">
+                    <label>логин:</label>
+                    <input type="text" name="username">
+                </div>
+                <div class="small field">
+                    <label>пароль:</label>
+                    <input type="password" name="password">
+                </div>
+                <div>
+                    <button class="ui button" type="submit">вход</button>
+                </div>
+                <div>
+                    <a href="/wip/register">регистрация</a>
+                </div>
             </form>
         </div>
     </div>

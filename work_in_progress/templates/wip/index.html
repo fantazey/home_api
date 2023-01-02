@@ -1,4 +1,22 @@
 {% extends 'wip/base.html' %}
 {% block content %}
-    hello {{ user.username }}
+<h2>
+    привет {{ user.username }}
+</h2>
+<table class="celled ui table">
+<thead>
+<th>Название</th>
+<th>Статус</th>
+<th>Дата добавления</th>
+</thead>
+<tbody>
+    {% for model in models %}
+        <tr>
+            <td>{{ model.name }}</td>
+            <td>{{ model.status }}</td>
+            <td>{{ model.created }}</td>
+        </tr>
+    {% endfor %}
+</tbody>
+</table>
 {% endblock %}

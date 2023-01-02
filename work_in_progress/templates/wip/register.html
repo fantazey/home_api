@@ -1,19 +1,25 @@
 {% extends 'wip/base.html' %}
 {% block content %}
-    <div style="display:flex; flex-direction: row; justify-content: center; align-content: center; margin-top: 100px">
-    <form action="/wip/register" method="post">
-        {% csrf_token %}
-        <div class="form" style="display: flex;flex-direction: column; color: wheat;">
-            <div class="form-row" style="display: flex; flex-direction: row;">
-                <label>username:</label><input type="text" name="username">
-            </div>
-            <div class="form-row" style="display: flex; flex-direction: row;">
-                <label>password:</label><input type="password" name="password">
-            </div>
-            <div class="form-row" style="display: flex; flex-direction: row;justify-content: flex-end">
-                <button type="submit">Register</button>
-            </div>
+    <div class="ui five column doubling stackable grid container">
+        <div class="column"></div>
+        <div class="column"></div>
+        <div class="column">
+            <form action="/wip/register" method="post" class="ui form">
+                {% csrf_token %}
+                <div class="field">
+                    <label>логин:</label>
+                    <input type="text" name="username">
+                </div>
+                <div class="small field">
+                    <label>пароль:</label>
+                    <input type="password" name="password">
+                </div>
+                <div>
+                    <button class="ui button" type="submit">регистрация</button>
+                </div>
+            </form>
         </div>
-    </form>
-</div>
+        <div class="column"></div>
+    <div class="column"></div>
+    </div>
 {% endblock %}
