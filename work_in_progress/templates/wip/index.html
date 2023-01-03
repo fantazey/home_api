@@ -14,15 +14,15 @@
     <tr>
         <td colspan="3"></td>
         <td>
-            <a href="{% url 'add_model' %}">Добавить</a>
+            <a href="{% url 'wip:add_model' %}">Добавить</a>
         </td>
     </tr>
     {% for model in models %}
         <tr>
             <td>{{ model.name }}</td>
-            <td>{{ model.status }}</td>
+            <td>{{ model.get_status_display }}</td>
             <td>{{ model.created }}</td>
-            <td></td>
+            <td><a href="{% url 'wip:view_model' model.id %}">Подробнее</a></td>
         </tr>
     {% endfor %}
 </tbody>

@@ -6,6 +6,8 @@ app_name = 'wip'
 urlpatterns = [
     path('', views.index, name='index'),
     path('add', views.add_model, name='add_model'),
+    path('view/<int:model_id>', views.view_progress, name='view_model'),
+
     path('login', views.log_in, name='login'),
     path('logout', views.log_out, name='logout'),
     path('register', views.register, name='register'),
