@@ -1,4 +1,4 @@
-FROM python:3-alpine
+FROM python:3.9.13-buster
 WORKDIR /usr/src/app
 COPY req.txt ./
 RUN pip install --no-cache-dir -r req.txt
