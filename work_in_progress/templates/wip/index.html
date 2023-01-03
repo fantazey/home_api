@@ -22,7 +22,23 @@
             <td>{{ model.name }}</td>
             <td>{{ model.get_status_display }}</td>
             <td>{{ model.created }}</td>
-            <td><a href="{% url 'wip:view_model' model.id %}">Подробнее</a></td>
+            <td>
+                <div>
+                    <a href="{% url 'wip:view_model' model.id %}">Подробнее</a>
+                </div>
+                <div>
+                    <a href="{% url 'wip:add_progress' model.id %}">Записать работу</a>
+                </div>
+                <div>
+                {% if model.status == model.Status.WISHED %}
+                    <a href="{% url 'wip:in_inventory' model.id %}">Купил!</a>
+                {% elif model.status == model.Status.IN_INVENTORY %}
+                    <a href="{% url 'wip:add_progress' model.id %}">Собираю</a>
+                {% elif model.status == model.Status.ASSEMBLING %}
+                    <a href="">Собрал</a>
+                {% endif %}
+                </div>
+            </td>
         </tr>
     {% endfor %}
 </tbody>

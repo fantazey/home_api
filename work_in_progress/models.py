@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 
 class Model(models.Model):
     class Status(models.TextChoices):
-        WISHED = 'washed', 'Лежит в магазине'
+        WISHED = 'wished', 'Лежит в магазине'
         IN_INVENTORY = 'in_inventory', 'Куплено'
         ASSEMBLING = 'assembling', 'Собирается'
         PRIMING = 'priming', 'Грунтуется'

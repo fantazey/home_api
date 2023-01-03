@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from django.shortcuts import render, redirect
 from django.http import HttpResponseBadRequest
 from django.urls import reverse
@@ -5,14 +7,13 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 
 from .models import Model, ModelProgress
-from .forms import AddModelForm, LoginForm
+from .forms import AddModelForm, LoginForm, AddProgressForm
 
 
 def index(request):
     if request.user.is_authenticated:
-        results = Model.objects.all()
-        context = {'models': results}
-        return render(request, 'wip/index.html', context)
+        models = Model.objects.all()
+        return render(request, 'wip/index.html', {'models': models})
     else:
         return redirect(reverse('wip:login'))
 
@@ -30,6 +31,15 @@ def add_model(request):
             status = Model.Status.IN_INVENTORY
         model.status = status
         model.save()
+    return redirect(reverse('wip:index'))
+
+
+def in_inventory(request, model_id):
+    model = Model.objects.get(id=model_id)
+    model.status = Model.Status.IN_INVENTORY
+    model.save()
+    progress = ModelProgress(model=model, title='Куплено', datetime=datetime.now())
+    progress.save()
     return redirect(reverse('wip:index'))
 
 
@@ -80,10 +90,33 @@ def log_out(request):
     return redirect(reverse('wip:login'))
 
 
-def view_progress(request, model_id):
+def view_progress(request, model_id, status=None):
     model = Model.objects.get(id=model_id)
     progress_items = ModelProgress.objects.filter(model=model)
     return render(request, 'wip/view_progress.html', {
         'model': model,
         'progress_items': progress_items
+    })
+
+
+def add_progress(request, model_id, status=None):
+    model = Model.objects.get(id=model_id)
+    if request.method == 'GET':
+        form = AddProgressForm()
+        return render(request, 'wip/add_progress.html', {
+            'model': model,
+            'form': form
+        })
+    form = AddProgressForm(request.POST)
+    if form.is_valid():
+        progress = ModelProgress(model=model,
+                                 title=form.cleaned_data['title'],
+                                 description=form.cleaned_data['description'],
+                                 datetime=form.cleaned_data['date'])
+        progress.save()
+        return redirect(reverse('wip:view_model', args=(model.id,)))
+
+    return render(request, 'wip/add_progress.html', {
+        'model': model,
+        'form': form
     })

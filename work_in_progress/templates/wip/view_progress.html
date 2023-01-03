@@ -8,8 +8,13 @@
 <th>Название</th>
 <th>Подробно</th>
 <th>Дата</th>
+<th></th>
 </thead>
 <tbody>
+    <tr>
+        <td colspan="3"></td>
+        <td><a href="{% url 'wip:add_progress' model.id %}">Добавить</a></td>
+    </tr>
     {% for progress in progress_items %}
         <tr>
             <td>{{ progress.title }}</td>
