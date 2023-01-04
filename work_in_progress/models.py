@@ -25,6 +25,12 @@ class BSUnit(models.Model):
     name = models.CharField(verbose_name="Название", max_length=500)
     bs_category = models.ForeignKey(BSCategory, on_delete=models.RESTRICT, verbose_name="Тип", null=True)
 
+    def __str__(self):
+        return "%s (%s)" % (self.name, self.bs_category.name)
+
+    def __unicode__(self):
+        return "%s (%s)" % (self.name, self.bs_category.name)
+
 
 class Model(models.Model):
     """

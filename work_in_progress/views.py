@@ -73,6 +73,8 @@ def add_model(request):
     if form.is_valid():
         name = form.cleaned_data['name']
         model = Model(name=name, user=request.user)
+        if form.cleaned_data['bs_unit']:
+            model.battlescribe_unit = form.cleaned_data['bs_unit']
         status = Model.Status.WISHED
         progress_title = "Захотелось новую модельку"
         if form.cleaned_data['in_inventory']:

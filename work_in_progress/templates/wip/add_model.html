@@ -3,25 +3,79 @@
 <h2>
     Добавление модели в PileOfShame
 </h2>
-    <div class="ui five column doubling stackable grid container">
-        <div class="column"></div>
-        <div class="column">
-            <form action="{% url 'wip:add_model' %}" class="ui form" method="post">
-            {% csrf_token %}
-                <div class="field">
-                    <label>{{ form.name.label }}</label>
-                    {{ form.name }}
-                </div>
-                <div class="field">
-                    <label>{{ form.in_inventory.label }}</label>
-                    {{ form.in_inventory }}
-                </div>
-                <div class="field">
-                    <button class="ui button" type="submit">Добавить</button>
-                </div>
-            </form>
-        </div>
-        <div class="column"></div>
-        <div class="column"></div>
+<div class="ui five column doubling stackable grid container">
+    <div class="column"></div>
+    <div class="column">
+        <form action="{% url 'wip:add_model' %}" class="ui form" method="post">
+        {% csrf_token %}
+            <div class="field">
+                <label>{{ form.bs_category.label }}</label>
+                {{ form.bs_category }}
+            </div>
+            <div class="field">
+                <label>{{ form.bs_unit.label }}</label>
+                {{ form.bs_unit }}
+            </div>
+            <div class="field">
+                <label>{{ form.name.label }}</label>
+                {{ form.name }}
+            </div>
+            <div class="field">
+                <label>{{ form.in_inventory.label }}</label>
+                {{ form.in_inventory }}
+            </div>
+            <div class="field">
+                <button class="ui button" type="submit">Добавить</button>
+            </div>
+        </form>
     </div>
+    <div class="column"></div>
+    <div class="column"></div>
+</div>
+<script>
+
+$('#id_bs_category.ui.dropdown').dropdown({
+    placeholder: false,
+    clearable: true,
+    fullTextSearch: true,
+    action: function(text, value) {
+        const category_id = value;
+        $('select#id_bs_unit').dropdown('set selected', '');
+        document.querySelector('#id_name').value = '';
+        $(this).dropdown('set selected', value);
+        $(this).dropdown('hide');
+        $('#id_bs_unit').parent().find('.menu .item').each((i, element) => {
+            element.style.display = 'block';
+            const unit_value = element.dataset['value'];
+            if (category_id !== '' && unit_value !== '' && !unit_value.startsWith(category_id + '_')) {
+                element.style.display = 'none';
+            }
+        });
+    }
+});
+
+$('#id_bs_unit.ui.dropdown').dropdown({
+    placeholder: false,
+    clearable: true,
+    fullTextSearch: true,
+    action: function(text, value) {
+        if (value === '') {
+            document.querySelector('#id_name').value = '';
+        } else {
+            document.querySelector('#id_name').value = text;
+        }
+        $(this).dropdown('set selected', value);
+        $(this).dropdown('hide');
+    },
+});
+
+function onChangeUnit(event) {
+    let newValue = '';
+    if (event.target.selectedOptions[0].value.length > 0) {
+        newValue = event.target.selectedOptions[0].text;
+    }
+    document.querySelector('#id_name').value = newValue;
+}
+
+</script>
 {% endblock %}
