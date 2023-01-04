@@ -1,3 +1,5 @@
+import datetime
+
 from django.shortcuts import render, redirect
 from django.http import HttpResponseBadRequest
 from django.urls import reverse
@@ -57,7 +59,7 @@ def log_out(request):
 
 def index(request):
     if request.user.is_authenticated:
-        models = Model.objects.all()
+        models = Model.objects.filter(user=request.user)
         return render(request, 'wip/index.html', {'models': models})
     else:
         return redirect(reverse('wip:login'))
@@ -72,10 +74,14 @@ def add_model(request):
         name = form.cleaned_data['name']
         model = Model(name=name, user=request.user)
         status = Model.Status.WISHED
+        progress_title = "Захотелось новую модельку"
         if form.cleaned_data['in_inventory']:
             status = Model.Status.IN_INVENTORY
+            progress_title = "Купил новую модельку"
         model.status = status
         model.save()
+        progress = ModelProgress(datetime=datetime.datetime.now(), title=progress_title, model=model)
+        progress.save()
     return redirect(reverse('wip:index'))
 
 

@@ -5,10 +5,12 @@
 </h2>
 <table class="celled ui table">
 <thead>
-<th>Название</th>
-<th>Статус</th>
-<th>Дата добавления</th>
-<th>Действия</th>
+    <tr>
+        <th>Название</th>
+        <th>Статус</th>
+        <th>Дата добавления</th>
+        <th>Действия</th>
+    </tr>
 </thead>
 <tbody>
     <tr>
@@ -26,20 +28,7 @@
                 <div>
                     <a href="{% url 'wip:progress' model.id %}">Подробнее</a>
                 </div>
-                <div>
-                    <a href="{% url 'wip:track_progress' model.id %}">Записать работу</a>
-                </div>
-                <div>
-                {% if model.status == model.Status.WISHED %}
-                    <a href="{% url 'wip:put_in_inventory' model.id %}">Купил</a>
-                {% elif model.status == model.Status.IN_INVENTORY %}
-                    <a href="{% url 'wip:start_assembly' %}">Взялся собирать</a>
-                {% elif model.status == model.Status.ASSEMBLING %}
-                    <a href="">Взялся грунтовать</a>
-                {% elif model.status == model.Status.ASSEMBLING %}
-                    <a href="">Собрал</a>
-                {% endif %}
-                </div>
+                {% include 'wip/model_actions.html' %}
             </td>
         </tr>
     {% endfor %}

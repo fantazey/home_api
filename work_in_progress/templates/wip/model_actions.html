@@ -1,0 +1,40 @@
+{% if model.status == model.Status.WISHED %}
+    <div>
+        <a href="{% url 'wip:put_in_inventory' model.id %}">Купил</a>
+    <div>
+{% elif model.status == model.Status.IN_INVENTORY %}
+    <div>
+        <a href="{% url 'wip:start_assembly' model.id %}">Взялся собирать</a>
+    </div>
+{% else %}
+    {% if model.status != model.Status.DONE %}
+        <div>
+            <a href="{% url 'wip:track_progress' model.id %}">Записать работу</a>
+        </div>
+    {% endif %}
+    <div>
+        {% if model.status == model.Status.ASSEMBLING %}
+            <a href="{% url 'wip:finish_assembly' model.id %}">Закончил собирать</a>
+        {% elif model.status == model.Status.ASSEMBLED %}
+            <a href="{% url 'wip:start_priming' model.id %}">Взялся грунтовать</a>
+        {% elif model.status == model.Status.PRIMING %}
+            <a href="{% url 'wip:finish_priming' model.id %}">Загрунтовал</a>
+        {% elif model.status == model.Status.PRIMED %}
+            <a href="{% url 'wip:start_painting' model.id %}">Начал красить в базу</a>
+        {% elif model.status == model.Status.BATTLE_READY_PAINTING %}
+            <a href="{% url 'wip:finish_painting' model.id %}">Покрасил в базу</a>
+        {% elif model.status == model.Status.BATTLE_READY_PAINTED %}
+            <a href="{% url 'wip:start_parade_ready_painting' model.id %}">Начал добавлять хайлайты</a>
+        {% elif model.status == model.Status.PARADE_READY_PAINTING %}
+            <a href="{% url 'wip:finish_parade_ready_painting' model.id %}">Закончил с хайлайтами</a>
+        {% elif model.status == model.Status.PARADE_READY_PAINTED %}
+            <a href="{% url 'wip:start_base_decoration' model.id %}">Начал оформлять базу</a>
+        {% elif model.status == model.Status.BASE_DECORATING %}
+            <a href="{% url 'wip:finish_base_decoration' model.id %}">Оформил базу</a>
+        {% elif model.status == model.Status.BASE_DECORATED %}
+            <a href="{% url 'wip:start_varnishing' model.id %}">Начал задувать лаком</a>
+        {% elif model.status == model.Status.VARNISHING %}
+            <a href="{% url 'wip:finish_varnishing' model.id %}">Задул лаком</a>
+        {% endif %}
+    </div>
+{% endif %}
