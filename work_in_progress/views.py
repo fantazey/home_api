@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from django.shortcuts import render, redirect
 from django.http import HttpResponseBadRequest
 from django.urls import reverse
@@ -8,43 +6,6 @@ from django.contrib.auth.models import User
 
 from .models import Model, ModelProgress
 from .forms import AddModelForm, LoginForm, AddProgressForm, RegistrationForm
-
-
-def index(request):
-    if request.user.is_authenticated:
-        models = Model.objects.all()
-        return render(request, 'wip/index.html', {'models': models})
-    else:
-        return redirect(reverse('wip:login'))
-
-
-def add_model(request):
-    if request.method == 'GET':
-        form = AddModelForm()
-        return render(request, 'wip/add_model.html', {'form': form})
-    form = AddModelForm(request.POST)
-    if form.is_valid():
-        name = form.cleaned_data['name']
-        model = Model(name=name, user=request.user)
-        status = Model.Status.WISHED
-        if form.cleaned_data['in_inventory']:
-            status = Model.Status.IN_INVENTORY
-        model.status = status
-        model.save()
-    return redirect(reverse('wip:index'))
-
-
-def put_in_inventory(request, model_id):
-    model = Model.objects.get(id=model_id)
-    model.status = Model.Status.IN_INVENTORY
-    model.save()
-    progress = ModelProgress(model=model, title='Куплено', datetime=datetime.now())
-    progress.save()
-    return redirect(reverse('wip:index'))
-
-
-def assembled(request, model_id):
-    pass
 
 
 def log_in(request):
@@ -92,6 +53,108 @@ def log_out(request):
     if request.user.is_authenticated:
         logout(request)
     return redirect(reverse('wip:login'))
+
+
+def index(request):
+    if request.user.is_authenticated:
+        models = Model.objects.all()
+        return render(request, 'wip/index.html', {'models': models})
+    else:
+        return redirect(reverse('wip:login'))
+
+
+def add_model(request):
+    if request.method == 'GET':
+        form = AddModelForm()
+        return render(request, 'wip/add_model.html', {'form': form})
+    form = AddModelForm(request.POST)
+    if form.is_valid():
+        name = form.cleaned_data['name']
+        model = Model(name=name, user=request.user)
+        status = Model.Status.WISHED
+        if form.cleaned_data['in_inventory']:
+            status = Model.Status.IN_INVENTORY
+        model.status = status
+        model.save()
+    return redirect(reverse('wip:index'))
+
+
+def put_in_inventory(request, model_id):
+    model = Model.objects.get(id=model_id, user=request.user)
+    model.put_in_inventory()
+    return redirect(reverse('wip:index'))
+
+
+def start_assembly(request, model_id):
+    model = Model.objects.get(id=model_id, user=request.user)
+    model.start_assembly()
+    return redirect(reverse('wip:index'))
+
+
+def finish_assembly(request, model_id):
+    model = Model.objects.get(id=model_id, user=request.user)
+    model.finish_assembly()
+    return redirect(reverse('wip:index'))
+
+
+def start_priming(request, model_id):
+    model = Model.objects.get(id=model_id, user=request.user)
+    model.start_priming()
+    return redirect(reverse('wip:index'))
+
+
+def finish_priming(request, model_id):
+    model = Model.objects.get(id=model_id, user=request.user)
+    model.finish_priming()
+    return redirect(reverse('wip:index'))
+
+
+def start_painting(request, model_id):
+    model = Model.objects.get(id=model_id, user=request.user)
+    model.start_painting()
+    return redirect(reverse('wip:index'))
+
+
+def finish_painting(request, model_id):
+    model = Model.objects.get(id=model_id, user=request.user)
+    model.finish_painting()
+    return redirect(reverse('wip:index'))
+
+
+def start_parade_ready_painting(request, model_id):
+    model = Model.objects.get(id=model_id, user=request.user)
+    model.start_parade_ready_painting()
+    return redirect(reverse('wip:index'))
+
+
+def finish_parade_ready_painting(request, model_id):
+    model = Model.objects.get(id=model_id, user=request.user)
+    model.finish_parade_ready_painting()
+    return redirect(reverse('wip:index'))
+
+
+def start_base_decoration(request, model_id):
+    model = Model.objects.get(id=model_id, user=request.user)
+    model.start_base_decoration()
+    return redirect(reverse('wip:index'))
+
+
+def finish_base_decoration(request, model_id):
+    model = Model.objects.get(id=model_id, user=request.user)
+    model.finish_base_decoration()
+    return redirect(reverse('wip:index'))
+
+
+def start_varnishing(request, model_id):
+    model = Model.objects.get(id=model_id, user=request.user)
+    model.start_varnishing()
+    return redirect(reverse('wip:index'))
+
+
+def finish_varnishing(request, model_id):
+    model = Model.objects.get(id=model_id, user=request.user)
+    model.finish_varnishing()
+    return redirect(reverse('wip:index'))
 
 
 def view_progress(request, model_id):

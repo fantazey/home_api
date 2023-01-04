@@ -1,3 +1,5 @@
+import datetime
+
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -7,10 +9,15 @@ class Model(models.Model):
         WISHED = 'wished', 'Лежит в магазине'
         IN_INVENTORY = 'in_inventory', 'Лежит в шкафу'
         ASSEMBLING = 'assembling', 'Собирается'
+        ASSEMBLED = 'assembled', 'Собирано'
         PRIMING = 'priming', 'Грунтуется'
+        PRIMED = 'primed', 'Загрунтовано'
         BATTLE_READY_PAINTING = 'battle_ready_painting', 'Крашу в базу'
+        BATTLE_READY_PAINTED = 'battle_ready_painted', 'Покрасил в базу'
         PARADE_READY_PAINTING = 'parade_ready_painting', 'Хайлайтю'
+        PARADE_READY_PAINTED = 'parade_ready_painted', 'Добавлены хайхлайты'
         BASE_DECORATING = 'base_decorating', 'Оформляю поставку'
+        BASE_DECORATED = 'base_decorated', 'База оформлена'
         VARNISHING = 'varnishing', 'Задуваю лаком'
         DONE = 'done', 'Закончено'
 
@@ -26,9 +33,54 @@ class Model(models.Model):
     def __unicode__(self):
         return "%s - %s" % (self.name, self.status)
 
+    def _update_status(self, new_status, progress_title):
+        progress = ModelProgress(model=self, datetime=datetime.datetime.now(), title=progress_title)
+        progress.save()
+        self.status = new_status
+        self.save()
+
+    def put_in_inventory(self):
+        self._update_status(self.Status.IN_INVENTORY, "Куплено")
+
+    def start_assembly(self):
+        self._update_status(self.Status.ASSEMBLING, "Начал сборку")
+
+    def finish_assembly(self):
+        self._update_status(self.Status.ASSEMBLED, "Закончил сборку")
+
+    def start_priming(self):
+        self._update_status(self.Status.PRIMING, "Начал грунтовать")
+
+    def finish_priming(self):
+        self._update_status(self.Status.PRIMED, "Загрунтовано")
+
+    def start_painting(self):
+        self._update_status(self.Status.BATTLE_READY_PAINTING, "Начал красить в базу")
+
+    def finish_painting(self):
+        self._update_status(self.Status.BATTLE_READY_PAINTED, "Покрасил в базу")
+
+    def start_parade_ready_painting(self):
+        self._update_status(self.Status.PARADE_READY_PAINTING, "Начал добавлять хайлайты")
+
+    def finish_parade_ready_painting(self):
+        self._update_status(self.Status.PARADE_READY_PAINTED, "Законил хайлайты")
+
+    def start_base_decoration(self):
+        self._update_status(self.Status.BASE_DECORATING, "Начал оформлять подставки")
+
+    def finish_base_decoration(self):
+        self._update_status(self.Status.BASE_DECORATED, "Подставки оформлены")
+
+    def start_varnishing(self):
+        self._update_status(self.Status.VARNISHING, "Начал задувать лаком")
+
+    def finish_varnishing(self):
+        self._update_status(self.Status.DONE, "Готово!")
+
 
 class ModelProgress(models.Model):
-    title = models.CharField(verbose_name="Описание выполненной работы", max_length=500)
+    title = models.CharField(verbose_name="Проводимые работы", max_length=500)
     description = models.TextField(verbose_name="Подробности выполнененной работы")
     datetime = models.DateTimeField(verbose_name="Дата записи")
     model = models.ForeignKey(Model, on_delete=models.RESTRICT, verbose_name="Прогресс")

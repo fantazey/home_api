@@ -33,9 +33,9 @@
                 {% if model.status == model.Status.WISHED %}
                     <a href="{% url 'wip:put_in_inventory' model.id %}">Купил</a>
                 {% elif model.status == model.Status.IN_INVENTORY %}
-                    <a href="">Взялся собирать</a>
+                    <a href="{% url 'wip:start_assembly' %}">Взялся собирать</a>
                 {% elif model.status == model.Status.ASSEMBLING %}
-                    <a href="">Собрал</a>
+                    <a href="">Взялся грунтовать</a>
                 {% elif model.status == model.Status.ASSEMBLING %}
                     <a href="">Собрал</a>
                 {% endif %}
