@@ -6,6 +6,13 @@
         <div class="column">
             <form action="{% url 'wip:register' %}" method="post" class="ui form">
                 {% csrf_token %}
+                <div class="field {{ form.first_name.errors|yesno:'error,' }}">
+                    <label>{{ form.first_name.label }}</label>
+                    {{ form.first_name }}
+                     {% if form.first_name.errors %}
+                        {{ form.first_name.errors }}
+                    {% endif %}
+                </div>
                 <div class="field {{ form.username.errors|yesno:'error,' }}">
                     <label>{{ form.username.label }}</label>
                     {{ form.username }}

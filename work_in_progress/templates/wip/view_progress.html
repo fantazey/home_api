@@ -5,7 +5,7 @@
 </h2>
 <table class="celled ui table">
 <thead>
-<th>Название</th>
+<th>Заголовок</th>
 <th>Подробно</th>
 <th>Дата</th>
 <th></th>
@@ -13,7 +13,7 @@
 <tbody>
     <tr>
         <td colspan="3"></td>
-        <td><a href="{% url 'wip:add_progress' model.id %}">Добавить</a></td>
+        <td><a href="{% url 'wip:track_progress' model.id %}">Добавить</a></td>
     </tr>
     {% for progress in progress_items %}
         <tr>

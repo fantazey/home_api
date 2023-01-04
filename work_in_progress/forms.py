@@ -17,3 +17,7 @@ class AddProgressForm(forms.Form):
 class LoginForm(forms.Form):
     username = forms.CharField(label='Логин', max_length=40)
     password = forms.CharField(label='Пароль', widget=forms.PasswordInput, max_length=40)
+
+
+class RegistrationForm(LoginForm):
+    first_name = forms.CharField(label='Имя', max_length=40)

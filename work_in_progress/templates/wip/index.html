@@ -24,16 +24,18 @@
             <td>{{ model.created }}</td>
             <td>
                 <div>
-                    <a href="{% url 'wip:view_model' model.id %}">Подробнее</a>
+                    <a href="{% url 'wip:progress' model.id %}">Подробнее</a>
                 </div>
                 <div>
-                    <a href="{% url 'wip:add_progress' model.id %}">Записать работу</a>
+                    <a href="{% url 'wip:track_progress' model.id %}">Записать работу</a>
                 </div>
                 <div>
                 {% if model.status == model.Status.WISHED %}
-                    <a href="">Купил!</a>
+                    <a href="{% url 'wip:put_in_inventory' model.id %}">Купил</a>
                 {% elif model.status == model.Status.IN_INVENTORY %}
-                    <a href="">Собираю</a>
+                    <a href="">Взялся собирать</a>
+                {% elif model.status == model.Status.ASSEMBLING %}
+                    <a href="">Собрал</a>
                 {% elif model.status == model.Status.ASSEMBLING %}
                     <a href="">Собрал</a>
                 {% endif %}
