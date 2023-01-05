@@ -16,7 +16,7 @@
         {% if user.is_authenticated %}
             <a class="item" href="{% url 'wip:logout' %}">Выход</a>
         {% else %}
-            <div class="item"></div>
+            <a class="item" href="{% url 'wip:login' %}">Вход</a>
         {% endif %}
     </div>
 {% block content %}
