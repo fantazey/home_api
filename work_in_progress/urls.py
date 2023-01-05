@@ -10,6 +10,7 @@ urlpatterns = [
     path('accounts/register', views.register, name='register'),
 
     path('add', views.add_model, name='add_model'),
+    path('<int:model_id>/edit', views.edit_model, name='edit_model'),
     # update status actions
     path('<int:model_id>/put_in_inventory', views.put_in_inventory, name='put_in_inventory'),
     path('<int:model_id>/start_assembly', views.start_assembly, name='start_assembly'),

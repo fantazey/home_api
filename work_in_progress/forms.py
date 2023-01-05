@@ -51,6 +51,19 @@ class AddModelForm(forms.Form):
                                 required=False)
 
 
+class EditModelForm(forms.Form):
+    name = forms.CharField(label='Название модели', max_length=500)
+    buy_date = forms.DateField(label='Дата покупки', required=False, widget=forms.DateInput(attrs={'type': 'date'}))
+    bs_category = AddModelForm.BSCategoryChoiceField(label="Категория из BattleScribe",
+                                        queryset=BSCategory.objects.all(),
+                                        widget=forms.Select(attrs={'class': 'ui fluid search selection dropdown'}),
+                                        required=False)
+    bs_unit = AddModelForm.BSUnitChoiceField(label="Модель из BattleScribe",
+                                queryset=BSUnit.objects.all(),
+                                widget=forms.Select(attrs={'class': 'ui fluid search selection dropdown'}),
+                                required=False)
+
+
 class AddProgressForm(forms.Form):
     title = forms.CharField(label='Название', max_length=500)
     description = forms.CharField(label='Подробнее', widget=forms.Textarea, required=False)

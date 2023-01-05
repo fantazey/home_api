@@ -8,7 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 
 from .models import Model, ModelProgress
-from .forms import AddModelForm, LoginForm, AddProgressForm, RegistrationForm
+from .forms import AddModelForm, LoginForm, AddProgressForm, RegistrationForm, EditModelForm
 
 
 def log_in(request):
@@ -70,7 +70,7 @@ def models(request, username):
     users = User.objects.filter(username=username)
     if not users.exists():
         return Http404("Пользователь не найден")
-    user_models = Model.objects.filter(user__username=username)
+    user_models = Model.objects.filter(user__username=username).order_by('buy_date', 'created')
     return render(request, 'wip/models.html', {'models': user_models, 'user': users.first()})
 
 
@@ -96,6 +96,29 @@ def add_model(request):
         model.save()
         progress = ModelProgress(datetime=datetime.datetime.now(), title=progress_title, model=model)
         progress.save()
+    return redirect(reverse('wip:models', kwargs={'username': request.user.username}))
+
+
+@login_required(login_url='/wip/accounts/login')
+def edit_model(request, model_id):
+    model = Model.objects.get(id=model_id, user=request.user)
+    if request.method == 'GET':
+        initial = {
+            'name': model.name,
+            'buy_date': model.buy_date.strftime('%Y-%m-%d') if model.buy_date is not None else None,
+            'bs_unit': model.battlescribe_unit,
+            'bs_category': model.battlescribe_unit.bs_category if model.battlescribe_unit is not None else None
+        }
+        form = EditModelForm(initial=initial)
+        return render(request, 'wip/edit_model.html', {'form': form, 'model': model})
+    form = EditModelForm(request.POST)
+    if form.is_valid():
+        model.name = form.cleaned_data['name']
+        if form.cleaned_data['bs_unit']:
+            model.battlescribe_unit = form.cleaned_data['bs_unit']
+        if form.cleaned_data['buy_date']:
+            model.buy_date = form.cleaned_data['buy_date']
+        model.save()
     return redirect(reverse('wip:models', kwargs={'username': request.user.username}))
 
 

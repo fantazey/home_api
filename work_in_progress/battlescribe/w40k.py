@@ -43,3 +43,11 @@ def read_fixture_file(source):
         if not BSUnit.objects.filter(name=name, bs_category=category).exists():
             unit = BSUnit(name=name, bs_category=category)
             unit.save()
+
+    model_entries = soup.find_all('selectionEntry', {'type': 'model'})
+    for entry in model_entries:
+        name = entry.attrs['name']
+        print("unit entry:", name)
+        if not BSUnit.objects.filter(name=name, bs_category=category).exists():
+            unit = BSUnit(name=name, bs_category=category)
+            unit.save()

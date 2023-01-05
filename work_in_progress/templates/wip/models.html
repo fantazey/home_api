@@ -10,13 +10,14 @@
         <th>Данные BS</th>
         <th>Статус</th>
         <th>Дата добавления/покупки</th>
+        <th>Дней с покупки</th>
         <th>Действия</th>
     </tr>
 </thead>
 <tbody>
     {% if request.user.is_authenticated and request.user == user %}
         <tr>
-            <td colspan="4"></td>
+            <td colspan="5"></td>
             <td>
                 <a href="{% url 'wip:add_model' %}">Добавить</a>
             </td>
@@ -32,10 +33,14 @@
             </td>
             <td>{{ model.get_status_display }}</td>
             <td>
+                {{ model.created }} /
                 {% if model.buy_date %}
                     {{ model.buy_date }}
-                {% else %}
-                    {{ model.created }}
+                {% endif %}
+            </td>
+            <td>
+                {% if model.status != model.Status.DONE %}
+                    {{ model.get_days_since_buy }}
                 {% endif %}
             </td>
             <td>
@@ -43,6 +48,7 @@
                     <a href="{% url 'wip:progress' user.username model.id %}">Подробнее</a>
                 </div>
                 {% if request.user.is_authenticated and request.user == user %}
+                    <a href="{% url 'wip:edit_model' model.id %}">Редактировать</a>
                     {% include 'wip/model_actions.html' %}
                 {% endif %}
             </td>

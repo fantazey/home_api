@@ -76,10 +76,10 @@ class Model(models.Model):
         verbose_name_plural = 'Модели в работе'
 
     def __str__(self):
-        return "%s - %s" % (self.name, self.status)
+        return "%s - %s" % (self.name, self.get_status_display())
 
     def __unicode__(self):
-        return "%s - %s" % (self.name, self.status)
+        return "%s - %s" % (self.name, self.get_status_display())
 
     def _update_status(self, new_status, progress_title):
         progress = ModelProgress(model=self, datetime=datetime.datetime.now(), title=progress_title)
@@ -126,6 +126,9 @@ class Model(models.Model):
 
     def finish_varnishing(self):
         self._update_status(self.Status.DONE, "Готово!")
+
+    def get_days_since_buy(self):
+        return (datetime.datetime.now().date() - self.buy_date).days
 
 
 class ModelProgress(models.Model):
