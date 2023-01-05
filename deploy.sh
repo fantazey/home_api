@@ -6,4 +6,5 @@ docker build -t home-api .
 docker stop test-django
 docker rm test-django
 docker run -d --name=test-django -p 8001:8000 --add-host=pi:192.168.0.133 home-api
+docker rmi $(docker images -f "dangling=true" -q)
 HERE
