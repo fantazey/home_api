@@ -9,7 +9,7 @@
         <th>Название</th>
         <th>Данные BS</th>
         <th>Статус</th>
-        <th>Дата добавления</th>
+        <th>Дней в ящике/Часов потрачено</th>
         <th>Детали</th>
     </tr>
 </thead>
@@ -23,7 +23,13 @@
                 {% endif %}
             </td>
             <td>{{ model.get_status_display }}</td>
-            <td>{{ model.created }}</td>
+            <td>
+                {% if model.status == model.Status.IN_INVENTORY %}
+                    {{ model.get_days_since_buy }} дней
+                {% elif model.status != model.Status.WISHED %}
+                    {{ model.get_hours_spent }} часов
+                {% endif %}
+            </td>
             <td>
                 <div>
                     <a href="{% url 'wip:progress' model.user.username model.id %}">Подробнее</a>
