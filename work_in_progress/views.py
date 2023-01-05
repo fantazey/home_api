@@ -61,6 +61,10 @@ def log_out(request):
     return redirect(reverse('wip:login'))
 
 
+def about(request):
+    return render(request, 'wip/about.html')
+
+
 def index(request):
     all_models = Model.objects.all()
     return render(request, 'wip/index.html', {'models': all_models})

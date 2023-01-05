@@ -84,13 +84,6 @@ DATABASES = {
         'HOST': 'pi',
         'PORT': '5432',
     },
-    'default_service-file': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'OPTIONS': {
-            'service': 'home_api',
-            'passfile': '.pgpass'
-        }
-    },
     'local': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
