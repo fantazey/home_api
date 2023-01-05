@@ -3,7 +3,7 @@ from datetime import datetime
 from django import forms
 from django.core.exceptions import ValidationError
 
-from .models import BSCategory, BSUnit
+from .models import BSCategory, BSUnit, Model
 
 
 class AddModelForm(forms.Form):
@@ -78,3 +78,7 @@ class LoginForm(forms.Form):
 
 class RegistrationForm(LoginForm):
     first_name = forms.CharField(label='Имя', max_length=40)
+
+
+class ModelFilterForm(forms.Form):
+    status = forms.ChoiceField(label="Статус", choices=Model.Status.choices)

@@ -3,6 +3,11 @@
 <h2>
     Модели пользователя {{ user.username }}
 </h2>
+<form action="{% url 'wip:models' user.username %}" class="ui form" method="get">
+    {{ filter_form.status.label }}:
+    {{ filter_form.status }}
+    <button class="ui button" type="submit">Искать</button>
+</form>
 <table class="celled ui table">
 <thead>
     <tr>

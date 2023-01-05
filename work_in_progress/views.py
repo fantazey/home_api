@@ -8,7 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 
 from .models import Model, ModelProgress
-from .forms import AddModelForm, LoginForm, AddProgressForm, RegistrationForm, EditModelForm
+from .forms import AddModelForm, LoginForm, AddProgressForm, RegistrationForm, EditModelForm, ModelFilterForm
 
 
 def log_in(request):
@@ -74,8 +74,12 @@ def models(request, username):
     users = User.objects.filter(username=username)
     if not users.exists():
         return Http404("Пользователь не найден")
-    user_models = Model.objects.filter(user__username=username).order_by('buy_date', 'created')
-    return render(request, 'wip/models.html', {'models': user_models, 'user': users.first()})
+    form = ModelFilterForm(request.GET)
+    if form.is_valid():
+        user_models = Model.objects.filter(user__username=username, status=form.cleaned_data['status'])
+    else:
+        user_models = Model.objects.filter(user__username=username).order_by('buy_date', 'created')
+    return render(request, 'wip/models.html', {'models': user_models, 'user': users.first(), 'filter_form': form})
 
 
 @login_required(login_url='/wip/accounts/login')
