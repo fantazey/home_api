@@ -26,7 +26,7 @@ class AddModelForm(forms.Form):
                 return None
             value = value.split('_')[1]
             try:
-                key = self.to_field_name or "pk"
+                key = "pk"
                 if isinstance(value, self.queryset.model):
                     value = getattr(value, key)
                 value = self.queryset.get(**{key: value})
@@ -38,9 +38,9 @@ class AddModelForm(forms.Form):
                 )
             return value
 
-
     name = forms.CharField(label='Название модели', max_length=500)
     in_inventory = forms.BooleanField(label='Куплено', required=False)
+    buy_date = forms.DateTimeField(label='Дата покупки', required=False)
     bs_category = BSCategoryChoiceField(label="Категория из BattleScribe",
                                         queryset=BSCategory.objects.all(),
                                         widget=forms.Select(attrs={'class': 'ui fluid search selection dropdown'}),

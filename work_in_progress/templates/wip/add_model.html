@@ -3,6 +3,7 @@
 <h2>
     Добавление модели в PileOfShame
 </h2>
+<a href="{% url 'wip:models' request.user.username %}">Назад</a>
 <div class="ui five column doubling stackable grid container">
     <div class="column"></div>
     <div class="column">
@@ -23,6 +24,10 @@
             <div class="field">
                 <label>{{ form.in_inventory.label }}</label>
                 {{ form.in_inventory }}
+            </div>
+            <div class="field">
+                <label>{{ form.buy_date.label }}</label>
+                {{ form.buy_date }}
             </div>
             <div class="field">
                 <button class="ui button" type="submit">Добавить</button>

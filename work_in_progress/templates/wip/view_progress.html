@@ -3,6 +3,7 @@
 <h2>
     Прогресс по модели: {{ model.name }}
 </h2>
+<a href="{% url 'wip:models' user.username %}">Назад</a>
 <table class="celled ui table">
 <thead>
 <th>Заголовок</th>
@@ -11,10 +12,12 @@
 <th></th>
 </thead>
 <tbody>
+    {% if request.user.is_authenticated and request.user == user %}
     <tr>
         <td colspan="3"></td>
         <td><a href="{% url 'wip:track_progress' model.id %}">Добавить</a></td>
     </tr>
+    {% endif %}
     {% for progress in progress_items %}
         <tr>
             <td>{{ progress.title }}</td>

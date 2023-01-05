@@ -4,7 +4,15 @@ from . import views
 
 app_name = 'wip'
 urlpatterns = [
+    # common paths
+    path('accounts/login/', views.log_in, name='login'),
+    path('accounts/logout', views.log_out, name='logout'),
+    path('accounts/register', views.register, name='register'),
+
     path('', views.index, name='index'),
+    path('<str:username>', views.models, name='models'),
+    path('<str:username>/<int:model_id>/progress', views.view_progress, name='progress'),
+
     path('add', views.add_model, name='add_model'),
     # update status actions
     path('<int:model_id>/put_in_inventory', views.put_in_inventory, name='put_in_inventory'),
@@ -23,11 +31,8 @@ urlpatterns = [
     path('<int:model_id>/start_varnishing', views.start_varnishing, name='start_varnishing'),
     path('<int:model_id>/finish_varnishing', views.finish_varnishing, name='finish_varnishing'),
     # progress
-    path('<int:model_id>/progress', views.view_progress, name='progress'),
+
     path('<int:model_id>/track', views.track_progress, name='track_progress'),
 
-    # common paths
-    path('login', views.log_in, name='login'),
-    path('logout', views.log_out, name='logout'),
-    path('register', views.register, name='register'),
+
 ]

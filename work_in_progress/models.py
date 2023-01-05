@@ -11,6 +11,10 @@ class BSCategory(models.Model):
     name = models.CharField(verbose_name="Название", max_length=500)
     source = models.CharField(verbose_name="Источник", max_length=500)
 
+    class Meta:
+        verbose_name = 'Категория BattleScribe'
+        verbose_name_plural = 'Категории BattleScribe'
+
     def __str__(self):
         return "%s(%s)" % (self.name, self.source)
 
@@ -24,6 +28,10 @@ class BSUnit(models.Model):
     """
     name = models.CharField(verbose_name="Название", max_length=500)
     bs_category = models.ForeignKey(BSCategory, on_delete=models.RESTRICT, verbose_name="Тип", null=True)
+
+    class Meta:
+        verbose_name = 'Юнит BattleScribe'
+        verbose_name_plural = 'Юниты BattleScribe'
 
     def __str__(self):
         return "%s (%s)" % (self.name, self.bs_category.name)
@@ -61,6 +69,10 @@ class Model(models.Model):
     user = models.ForeignKey(User, verbose_name="Пользователь", on_delete=models.RESTRICT)
     created = models.DateTimeField(verbose_name="Дата создания", auto_now_add=True, null=False, blank=False)
     updated = models.DateTimeField(verbose_name="Дата обновления", auto_now=True, null=False, blank=False)
+
+    class Meta:
+        verbose_name = 'Модель в работе'
+        verbose_name_plural = 'Модели в работе'
 
     def __str__(self):
         return "%s - %s" % (self.name, self.status)
@@ -123,6 +135,10 @@ class ModelProgress(models.Model):
     datetime = models.DateTimeField(verbose_name="Дата записи")
     time = models.FloatField(verbose_name="Затраченое время в часах", default=0.0)
     model = models.ForeignKey(Model, on_delete=models.RESTRICT, verbose_name="Прогресс")
+
+    class Meta:
+        verbose_name = 'Работа над моделью'
+        verbose_name_plural = 'Работы над моделью'
 
     def __str__(self):
         return "%s - %s - %s - %s" % (self.model.name, self.title, self.time, self.datetime)

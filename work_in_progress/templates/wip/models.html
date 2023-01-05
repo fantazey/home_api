@@ -1,7 +1,7 @@
 {% extends 'wip/base.html' %}
 {% block content %}
 <h2>
-    Лента WIP
+    Модели пользователя {{ user.username }}
 </h2>
 <table class="celled ui table">
 <thead>
@@ -10,10 +10,18 @@
         <th>Данные BS</th>
         <th>Статус</th>
         <th>Дата добавления</th>
-        <th>Детали</th>
+        <th>Действия</th>
     </tr>
 </thead>
 <tbody>
+    {% if request.user.is_authenticated and request.user == user %}
+        <tr>
+            <td colspan="4"></td>
+            <td>
+                <a href="{% url 'wip:add_model' %}">Добавить</a>
+            </td>
+        </tr>
+    {% endif %}
     {% for model in models %}
         <tr>
             <td>{{ model.name }}</td>
@@ -28,6 +36,9 @@
                 <div>
                     <a href="{% url 'wip:progress' user.username model.id %}">Подробнее</a>
                 </div>
+                {% if request.user.is_authenticated and request.user == user %}
+                    {% include 'wip/model_actions.html' %}
+                {% endif %}
             </td>
         </tr>
     {% endfor %}

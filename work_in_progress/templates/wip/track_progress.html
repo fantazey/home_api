@@ -3,30 +3,31 @@
 <h2>
     Добавление прогресса по модели {{ model.name }}
 </h2>
-    <div class="ui five column doubling stackable grid container">
-        <div class="column"></div>
-        <div class="column">
-            <form action="{% url 'wip:add_progress' model.id %}" class="ui form" method="post">
-            {% csrf_token %}
-                <div class="field">
-                    <label>{{ form.title.label }}</label>
-                    {{ form.title }}
-                </div>
-                <div class="field">
-                    <label>{{ form.description.label }}</label>
-                    {{ form.description }}
-                </div>
-                <div class="field">
-                    <label>{{ form.date.label }}</label>
-                    {{ form.date }}
-                </div>
-                <div class="field">
-                    <button class="ui button" type="submit">Добавить</button>
-                    <a href="{% url 'wip:view_model' model.id %}" class="ui button">Назад</a>
-                </div>
-            </form>
-        </div>
-        <div class="column"></div>
-        <div class="column"></div>
+<a href="{% url 'wip:progress' user.username model.id %}">Назад</a>
+<div class="ui five column doubling stackable grid container">
+    <div class="column"></div>
+    <div class="column">
+        <form action="{% url 'wip:add_progress' model.id %}" class="ui form" method="post">
+        {% csrf_token %}
+            <div class="field">
+                <label>{{ form.title.label }}</label>
+                {{ form.title }}
+            </div>
+            <div class="field">
+                <label>{{ form.description.label }}</label>
+                {{ form.description }}
+            </div>
+            <div class="field">
+                <label>{{ form.date.label }}</label>
+                {{ form.date }}
+            </div>
+            <div class="field">
+                <button class="ui button" type="submit">Добавить</button>
+                <a href="{% url 'wip:view_model' model.id %}" class="ui button">Назад</a>
+            </div>
+        </form>
     </div>
+    <div class="column"></div>
+    <div class="column"></div>
+</div>
 {% endblock %}
