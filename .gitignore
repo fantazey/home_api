@@ -1,6 +1,6 @@
 venv
 *.pyc
 .idea
-private_settings.py
+home_api/private_settings.py
 *.sql
 *.sqlite3
