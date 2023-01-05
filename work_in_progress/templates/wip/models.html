@@ -9,16 +9,14 @@
         <th>Название</th>
         <th>Данные BS</th>
         <th>Статус</th>
-        <th>Статус</th>
-        <th>Дата добавления/покупки</th>
-        <th>Часов записано</th>
+        <th>Дней в ящике/Часов потрачено</th>
         <th>Действия</th>
     </tr>
 </thead>
 <tbody>
     {% if request.user.is_authenticated and request.user == user %}
         <tr>
-            <td colspan="6"></td>
+            <td colspan="4"></td>
             <td>
                 <a href="{% url 'wip:add_model' %}">Добавить</a>
             </td>
@@ -34,19 +32,11 @@
             </td>
             <td>{{ model.get_status_display }}</td>
             <td>
-                {{ model.created }} /
-                {% if model.buy_date %}
-                    {{ model.buy_date }}
-                {% endif %}
-            </td>
-            <td>
-                {% if model.status != model.Status.DONE %}
-                    {{ model.get_days_since_buy }}
-                {% endif %}
-            </td>
-            <td>
-                {% if model.status != model.Status.WISHED or model.status != model.Status.IN_INVENTORY %}
-                    {{ model.get_hours_spent }}
+                {% if model.status != model.Status.WISHED %}
+                    <p>лежит уже {{ model.get_days_since_buy }} дней</p>
+                    {% if model.status != model.Status.IN_INVENTORY %}
+                        <p>потрачено {{ model.get_hours_spent }} часов</p>
+                    {% endif %}
                 {% endif %}
             </td>
             <td>

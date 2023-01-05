@@ -24,10 +24,11 @@
             </td>
             <td>{{ model.get_status_display }}</td>
             <td>
-                {% if model.status == model.Status.IN_INVENTORY %}
-                    {{ model.get_days_since_buy }} дней
-                {% elif model.status != model.Status.WISHED %}
-                    {{ model.get_hours_spent }} часов
+                {% if model.status != model.Status.WISHED %}
+                    <p>лежит уже {{ model.get_days_since_buy }} дней</p>
+                    {% if model.status != model.Status.IN_INVENTORY %}
+                        <p>потрачено {{ model.get_hours_spent }} часов</p>
+                    {% endif %}
                 {% endif %}
             </td>
             <td>
