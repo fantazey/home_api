@@ -40,7 +40,7 @@ class AddModelForm(forms.Form):
 
     name = forms.CharField(label='Название модели', max_length=500)
     in_inventory = forms.BooleanField(label='Куплено', required=False)
-    buy_date = forms.DateTimeField(label='Дата покупки', required=False)
+    buy_date = forms.DateField(label='Дата покупки', required=False, widget=forms.DateInput(attrs={'type': 'date'}))
     bs_category = BSCategoryChoiceField(label="Категория из BattleScribe",
                                         queryset=BSCategory.objects.all(),
                                         widget=forms.Select(attrs={'class': 'ui fluid search selection dropdown'}),

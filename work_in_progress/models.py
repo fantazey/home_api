@@ -67,6 +67,7 @@ class Model(models.Model):
     battlescribe_unit = models.ForeignKey(BSUnit, verbose_name="Из каталога BS", on_delete=models.RESTRICT, null=True)
     status = models.CharField(verbose_name="Статус", max_length=200, choices=Status.choices, default=Status.WISHED)
     user = models.ForeignKey(User, verbose_name="Пользователь", on_delete=models.RESTRICT)
+    buy_date = models.DateField(verbose_name="Дата покупки", null=True)
     created = models.DateTimeField(verbose_name="Дата создания", auto_now_add=True, null=False, blank=False)
     updated = models.DateTimeField(verbose_name="Дата обновления", auto_now=True, null=False, blank=False)
 
@@ -87,6 +88,7 @@ class Model(models.Model):
         self.save()
 
     def put_in_inventory(self):
+        self.buy_date = datetime.datetime.now()
         self._update_status(self.Status.IN_INVENTORY, "Куплено")
 
     def start_assembly(self):

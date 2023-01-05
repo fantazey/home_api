@@ -9,7 +9,7 @@
         <th>Название</th>
         <th>Данные BS</th>
         <th>Статус</th>
-        <th>Дата добавления</th>
+        <th>Дата добавления/покупки</th>
         <th>Действия</th>
     </tr>
 </thead>
@@ -31,7 +31,13 @@
                 {% endif %}
             </td>
             <td>{{ model.get_status_display }}</td>
-            <td>{{ model.created }}</td>
+            <td>
+                {% if model.buy_date %}
+                    {{ model.buy_date }}
+                {% else %}
+                    {{ model.created }}
+                {% endif %}
+            </td>
             <td>
                 <div>
                     <a href="{% url 'wip:progress' user.username model.id %}">Подробнее</a>

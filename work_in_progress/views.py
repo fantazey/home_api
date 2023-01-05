@@ -89,7 +89,9 @@ def add_model(request):
         progress_title = "Захотелось новую модельку"
         if form.cleaned_data['in_inventory']:
             status = Model.Status.IN_INVENTORY
-            progress_title = "Купил новую модельку"
+            progress_title = "Куплено"
+            if form.cleaned_data['buy_date']:
+                model.buy_date = form.cleaned_data['buy_date']
         model.status = status
         model.save()
         progress = ModelProgress(datetime=datetime.datetime.now(), title=progress_title, model=model)
