@@ -130,6 +130,9 @@ class Model(models.Model):
     def get_days_since_buy(self):
         return (datetime.datetime.now().date() - self.buy_date).days
 
+    def get_hours_spent(self):
+        return self.modelprogress_set.aggregate(models.Sum('time'))['time__sum']
+
 
 class ModelProgress(models.Model):
     """
