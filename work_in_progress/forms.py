@@ -40,6 +40,7 @@ class AddModelForm(forms.Form):
 
     name = forms.CharField(label='Название модели', max_length=500)
     in_inventory = forms.BooleanField(label='Куплено', required=False)
+    hidden = forms.BooleanField(label='Скрыть', required=False, initial=False)
     buy_date = forms.DateField(label='Дата покупки', required=False, widget=forms.DateInput(attrs={'type': 'date'}))
     bs_category = BSCategoryChoiceField(label="Категория из BattleScribe",
                                         queryset=BSCategory.objects.all(),
@@ -64,7 +65,8 @@ class EditModelForm(forms.Form):
                                              queryset=BSUnit.objects.all(),
                                              widget=forms.Select(attrs={'class': 'ui fluid search selection dropdown'}),
                                              required=False)
-    images = forms.ImageField(label="Картиночки", widget=forms.ClearableFileInput(attrs={'multiple': True}))
+    images = forms.ImageField(label="Картиночки", widget=forms.ClearableFileInput(attrs={'multiple': True}), required=False)
+    hidden = forms.BooleanField(label="Скрыть", required=False, initial=False)
 
 
 class AddProgressForm(forms.Form):

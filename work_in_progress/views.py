@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.db.models import Max
 
 from .models import Model, ModelProgress, ModelImage
 from .forms import AddModelForm, LoginForm, AddProgressForm, RegistrationForm, EditModelForm, ModelFilterForm
@@ -66,7 +67,7 @@ def about(request):
 
 
 def index(request):
-    all_models = Model.objects.all()
+    all_models = Model.objects.filter(hidden=False)[:20]
     return render(request, 'wip/index.html', {'models': all_models})
 
 
@@ -74,12 +75,14 @@ def models(request, username):
     users = User.objects.filter(username=username)
     if not users.exists():
         return Http404("Пользователь не найден")
+    user = users.first()
     form = ModelFilterForm(request.GET)
+    user_models = Model.objects.annotate(last_record=Max('modelprogress__datetime')).filter(user__username=username).order_by('-last_record', 'buy_date', 'created')
     if form.is_valid():
-        user_models = Model.objects.filter(user__username=username, status=form.cleaned_data['status'])
-    else:
-        user_models = Model.objects.filter(user__username=username).order_by('buy_date', 'created')
-    return render(request, 'wip/models.html', {'models': user_models, 'user': users.first(), 'filter_form': form})
+        user_models = user_models.filter(status=form.cleaned_data['status'])
+    if request.user != user:
+        user_models = user_models.filter(hidden=False)
+    return render(request, 'wip/models.html', {'models': user_models, 'user': user, 'filter_form': form})
 
 
 @login_required(login_url='/wip/accounts/login')
@@ -100,6 +103,7 @@ def add_model(request):
             progress_title = "Куплено"
             if form.cleaned_data['buy_date']:
                 model.buy_date = form.cleaned_data['buy_date']
+        model.hidden = form.cleaned_data['hidden']
         model.status = status
         model.save()
         progress = ModelProgress(datetime=datetime.datetime.now(), title=progress_title, model=model)
@@ -115,7 +119,8 @@ def edit_model(request, model_id):
             'name': model.name,
             'buy_date': model.buy_date.strftime('%Y-%m-%d') if model.buy_date is not None else None,
             'bs_unit': model.battlescribe_unit,
-            'bs_category': model.battlescribe_unit.bs_category if model.battlescribe_unit is not None else None
+            'bs_category': model.battlescribe_unit.bs_category if model.battlescribe_unit is not None else None,
+            'hidden': model.hidden
         }
         form = EditModelForm(initial=initial)
         return render(request, 'wip/edit_model.html', {'form': form, 'model': model})
@@ -126,8 +131,10 @@ def edit_model(request, model_id):
             model.battlescribe_unit = form.cleaned_data['bs_unit']
         if form.cleaned_data['buy_date']:
             model.buy_date = form.cleaned_data['buy_date']
+        model.hidden = form.cleaned_data['hidden']
         model.save()
-    return redirect(reverse('wip:models', kwargs={'username': request.user.username}))
+        return redirect(reverse('wip:models', kwargs={'username': request.user.username}))
+    return render(request, 'wip/edit_model.html', {'form': form, 'model': model})
 
 
 @login_required(login_url='/wip/accounts/login')

@@ -1,6 +1,4 @@
 from django.urls import path
-
-from home_api.settings import MEDIA_URL, MEDIA_ROOT
 from . import views
 
 app_name = 'wip'

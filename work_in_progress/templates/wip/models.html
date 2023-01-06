@@ -29,7 +29,12 @@
     {% endif %}
     {% for model in models %}
         <tr>
-            <td>{{ model.name }}</td>
+            <td>
+                {{ model.name }}
+                {% if model.get_last_image_url %}
+                    <img src="{{ model.get_last_image_url }}" width="100" height="100">
+                {% endif %}
+            </td>
             <td>
                 {% if model.battlescribe_unit %}
                     {{ model.battlescribe_unit.name }} [{{ model.battlescribe_unit.bs_category.name }}]

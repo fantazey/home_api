@@ -70,6 +70,7 @@ class Model(models.Model):
     buy_date = models.DateField(verbose_name="Дата покупки", null=True)
     created = models.DateTimeField(verbose_name="Дата создания", auto_now_add=True, null=False, blank=False)
     updated = models.DateTimeField(verbose_name="Дата обновления", auto_now=True, null=False, blank=False)
+    hidden = models.BooleanField(verbose_name="Скрыто", default=False)
 
     class Meta:
         verbose_name = 'Модель в работе'
@@ -134,6 +135,11 @@ class Model(models.Model):
 
     def get_hours_spent(self):
         return self.modelprogress_set.aggregate(models.Sum('time'))['time__sum']
+
+    def get_last_image_url(self):
+        if not self.modelimage_set.exists():
+            return None
+        return self.modelimage_set.order_by('-id').first().image.url
 
 
 class ModelProgress(models.Model):
