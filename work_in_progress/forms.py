@@ -55,13 +55,16 @@ class EditModelForm(forms.Form):
     name = forms.CharField(label='Название модели', max_length=500)
     buy_date = forms.DateField(label='Дата покупки', required=False, widget=forms.DateInput(attrs={'type': 'date'}))
     bs_category = AddModelForm.BSCategoryChoiceField(label="Категория из BattleScribe",
-                                        queryset=BSCategory.objects.all(),
-                                        widget=forms.Select(attrs={'class': 'ui fluid search selection dropdown'}),
-                                        required=False)
+                                                     queryset=BSCategory.objects.all(),
+                                                     widget=forms.Select(
+                                                         attrs={'class': 'ui fluid search selection dropdown'}
+                                                     ),
+                                                     required=False)
     bs_unit = AddModelForm.BSUnitChoiceField(label="Модель из BattleScribe",
-                                queryset=BSUnit.objects.all(),
-                                widget=forms.Select(attrs={'class': 'ui fluid search selection dropdown'}),
-                                required=False)
+                                             queryset=BSUnit.objects.all(),
+                                             widget=forms.Select(attrs={'class': 'ui fluid search selection dropdown'}),
+                                             required=False)
+    images = forms.ImageField(label="Картиночки", widget=forms.ClearableFileInput(attrs={'multiple': True}))
 
 
 class AddProgressForm(forms.Form):
@@ -69,6 +72,9 @@ class AddProgressForm(forms.Form):
     description = forms.CharField(label='Подробнее', widget=forms.Textarea, required=False)
     date = forms.DateTimeField(label='Дата проведения работы', initial=datetime.now)
     time = forms.FloatField(label="Затраченое время", initial=0.0)
+    images = forms.ImageField(label="Картиночки",
+                              widget=forms.ClearableFileInput(attrs={'multiple': True}),
+                              required=False)
 
 
 class LoginForm(forms.Form):

@@ -4,3 +4,4 @@ venv
 home_api/private_settings.py
 *.sql
 *.sqlite3
+media

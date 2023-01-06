@@ -1,5 +1,6 @@
 from django.urls import path
 
+from home_api.settings import MEDIA_URL, MEDIA_ROOT
 from . import views
 
 app_name = 'wip'
@@ -36,3 +37,4 @@ urlpatterns = [
     path('<str:username>', views.models, name='models'),
     path('<str:username>/<int:model_id>/progress', views.view_progress, name='progress'),
 ]
+

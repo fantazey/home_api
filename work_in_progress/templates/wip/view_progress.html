@@ -6,9 +6,11 @@
 <a href="{% url 'wip:models' user.username %}">Назад</a>
 <table class="celled ui table">
 <thead>
+<th>Дата</th>
 <th>Заголовок</th>
 <th>Подробно</th>
-<th>Дата</th>
+<th>Часов</th>
+<th>Картинки</th>
 <th></th>
 </thead>
 <tbody>
@@ -20,10 +22,15 @@
     {% endif %}
     {% for progress in progress_items %}
         <tr>
+            <td>{{ progress.datetime }}</td>
             <td>{{ progress.title }}</td>
             <td>{{ progress.description }}</td>
-            <td>{{ progress.datetime }}</td>
-            <td></td>
+            <td>{{ progress.time }}</td>
+            <td>
+                {% for item in progress.modelimage_set.all %}
+                    <img width="100" height="100" src="{{ item.image.url }}">
+                {% endfor %}
+            </td>
         </tr>
     {% endfor %}
 </tbody>

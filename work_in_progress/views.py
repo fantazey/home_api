@@ -7,7 +7,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 
-from .models import Model, ModelProgress
+from .models import Model, ModelProgress, ModelImage
 from .forms import AddModelForm, LoginForm, AddProgressForm, RegistrationForm, EditModelForm, ModelFilterForm
 
 
@@ -227,7 +227,7 @@ def view_progress(request, username, model_id):
         return Http404("Пользователь не найден")
     user = users.first()
     model = Model.objects.get(id=model_id, user=user)
-    progress_items = ModelProgress.objects.filter(model=model)
+    progress_items = ModelProgress.objects.filter(model=model).order_by('-datetime')
     return render(request, 'wip/view_progress.html', {
         'model': model,
         'user': user,
@@ -244,14 +244,18 @@ def track_progress(request, model_id):
             'model': model,
             'form': form
         })
-    form = AddProgressForm(request.POST)
+    form = AddProgressForm(request.POST, request.FILES)
     if form.is_valid():
         progress = ModelProgress(model=model,
                                  title=form.cleaned_data['title'],
                                  description=form.cleaned_data['description'],
+                                 time=form.cleaned_data['time'],
                                  datetime=form.cleaned_data['date'])
         progress.save()
-        return redirect(reverse('wip:progress', args=(model.id,)))
+        for file in request.FILES.getlist('images'):
+            image = ModelImage(progress=progress, model=progress.model, image=file)
+            image.save()
+        return redirect(reverse('wip:progress', args=(model.user.username, model.id,)))
 
     return render(request, 'wip/track_progress.html', {
         'model': model,

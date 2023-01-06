@@ -156,3 +156,12 @@ class ModelProgress(models.Model):
     def __unicode__(self):
         return "%s - %s - %s - %s" % (self.model.name, self.title, self.time, self.datetime)
 
+
+def model_image_path(instance: 'ModelImage', filename: str):
+    return 'wip/%s/%s/%s' % (instance.model.user.username, instance.model.name, filename)
+
+
+class ModelImage(models.Model):
+    image = models.ImageField(verbose_name="Фоточька", upload_to=model_image_path)
+    progress = models.ForeignKey(ModelProgress, verbose_name="Процесс покраса", null=True, on_delete=models.RESTRICT)
+    model = models.ForeignKey(Model, verbose_name="Модель", on_delete=models.RESTRICT)
