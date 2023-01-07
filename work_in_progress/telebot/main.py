@@ -1,9 +1,16 @@
+import datetime
+import io
 import logging
 
+from asgiref.sync import sync_to_async
+from django.db.models import Max
+from django.utils import timezone
+from django.core.files.images import ImageFile
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
 
 from home_api.private_settings import TOKEN
+from work_in_progress.models import Model, ModelProgress, ModelImage, Artist
 
 CHAT_PROGRESS_RECORDS = {}
 
@@ -13,8 +20,18 @@ logging.basicConfig(
 )
 
 
+@sync_to_async
+def get_artist(telegram_name):
+    return Artist.objects.filter(telegram_name=telegram_name).first()
+
+
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="".join(HELP_TEXT))
+    artist_exists = await get_artist(update.effective_chat.username)
+    if not artist_exists:
+        await context.bot.send_message(chat_id=update.effective_chat.id,
+                                       text="Пользователь %s не найден" % update.effective_chat.username)
+        return
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="\n".join(HELP_TEXT))
 
 
 HELP_TEXT = [
@@ -27,29 +44,67 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text=''.join(HELP_TEXT))
 
 
+@sync_to_async
 def get_user_models(username):
-    return [
-        {'id': 1, 'name': 'Test 1', 'status': 'Painting'},
-        {'id': 2, 'name': 'Test 2', 'status': 'Highlighting'},
-        {'id': 3, 'name': 'Test 3', 'status': 'Assembling'}
-    ]
+    artists = Artist.objects.filter(telegram_name=username)
+    if artists.count() != 1:
+        raise Exception("Найдено 0 или больше 1 пользователя")
+
+    user = artists.first().user
+    models = Model.objects.annotate(
+        last_record=Max('modelprogress__datetime')
+    ).filter(user=user).order_by('-last_record')[:5]
+    result = []
+    for model in models:
+        result.append({
+            'id': model.id,
+            'name': model.name,
+            'status': model.get_status_display()
+        })
+    return result
 
 
-def get_track_record(progress_id):
-    return {"id": 1, "title": "123", "time": "123"}
+@sync_to_async()
+def get_model(model_id):
+    return Model.objects.get(id=model_id)
+
+
+@sync_to_async
+def get_model_progress(progress_id):
+    return ModelProgress.objects.get(id=progress_id)
+
+
+@sync_to_async
+def record_model_progress(model_id, time, title, telegram_name):
+    artist = Artist.objects.filter(telegram_name=telegram_name).first()
+    user = artist.user
+    model = Model.objects.filter(id=model_id, user=user).first()
+    progress = ModelProgress(model=model,
+                             status=model.status,
+                             time=time,
+                             title=title,
+                             datetime=timezone.now())
+    progress.save()
+    return progress.id
+
+
+@sync_to_async
+def save_image_to_progress(model_progress_id, image_file):
+    model_progress = ModelProgress.objects.get(id=model_progress_id)
+    image = ModelImage(image=image_file, progress=model_progress, model=model_progress.model)
+    image.save()
 
 
 async def time_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if context.args is None or len(context.args) == 0:
-        # todo: добавить чтение моделей из базы
-        models = get_user_models(update.effective_chat.username)
+        models = await get_user_models(update.effective_chat.username)
         text = []
         for model in models:
             message = "Чтобы записать время для модели %s (%s) используй команду: \n/time %s" % \
                       (model['name'], model['status'], model['id'])
             text.append(message)
         await context.bot.send_message(chat_id=update.effective_chat.id, text="\n".join(text))
-
+        return
     if len(context.args) < 2:
         await context.bot.send_message(chat_id=update.effective_chat.id, text="Мало данных")
         return
@@ -60,14 +115,14 @@ async def time_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(chat_id=update.effective_chat.id,
                                        text="Первый и второй параметры должны быть числами: 1 или 0.5 или 0,5")
         return
-    message = ["Записываю время %s часов для модели %s" % (track_time, model_id)]
+    message = ["Записал время %s часов для модели %s" % (track_time, model_id)]
+    title = ""
     if len(context.args) > 3:
         title = " ".join(context.args[2:])
         message.append("C пояснением %s" % title)
-
-    # todo: Сохранить запись в базу
-    track_record_id = 1
-    CHAT_PROGRESS_RECORDS[update.effective_chat.id] = track_record_id
+    model_progress_id = await record_model_progress(model_id, track_time, title, update.effective_chat.username)
+    message.append("из записи: %s" % model_progress_id)
+    CHAT_PROGRESS_RECORDS[update.effective_chat.id] = model_progress_id
     message.append("Чтобы добавить фотографию к записанному времени отправь в ответ файл")
     await context.bot.send_message(chat_id=update.effective_chat.id, text="\n".join(message))
 
@@ -76,37 +131,34 @@ async def upload_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.id not in CHAT_PROGRESS_RECORDS.keys():
         await context.bot.send_message(chat_id=update.effective_chat.id,
                                        text="Не достаточно контекста для сохранения фотографии")
-    track_id = CHAT_PROGRESS_RECORDS[update.effective_chat.id]
-    get
-    message = [""]
+    if not update.message.document and not update.message.photo:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="Непонятно")
+        return
+
+    model_progress_id = CHAT_PROGRESS_RECORDS[update.effective_chat.id]
+    del CHAT_PROGRESS_RECORDS[update.effective_chat.id]
+
     bot = update.get_bot()
-    caption = update.message.caption
+    buf = bytearray()
+    file_id = None
     if update.message.document:
         document = update.message.document
         file_id = document.file_id
-        file_name = document.file_name
-        file_size = document.file_size
-        file = await bot.get_file(file_id)
-        buf = None
-        await file.download_as_bytearray(buf)
-        print(file_id, file_size, file_name, buf)
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="Загружаю документ %s" % file_name)
-        return
     if update.message.photo:
-        # photo = update.message.photo
         count = len(update.message.photo)
-        file_id = update.message.photo[count-1].file_id
-        file_size = update.message.photo[count - 1].file_size
-        file_name = update.effective_chat.username + " " + file_id
-        file = await bot.get_file(file_id)
-        buf = None
-        await file.download_as_bytearray(buf)
-        print(file_id, file_size, file_name, buf)
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="Загружаю фото %s" % file_name)
-        return
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="Непонятно")
+        file_id = update.message.photo[count - 1].file_id
 
-if __name__ == '__main__':
+    if file_id is not None:
+        file = await bot.get_file(file_id)
+        file_name = update.effective_chat.username + "_" + file_id
+        await file.download_as_bytearray(buf)
+        print(file_id, file_name, buf)
+        image_file = ImageFile(io.BytesIO(buf), name=file_name)
+        await save_image_to_progress(model_progress_id, image_file)
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="Картиночка сохранена")
+
+
+def run_telebot():
     application = ApplicationBuilder().token(TOKEN).build()
     start_handler = CommandHandler('start', start_command)
     time_handler = CommandHandler('time', time_command)
@@ -117,3 +169,7 @@ if __name__ == '__main__':
     application.add_handler(time_handler)
     application.add_handler(image_handler)
     application.run_polling()
+
+
+if __name__ == '__main__':
+    run_telebot()

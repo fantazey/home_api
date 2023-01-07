@@ -189,3 +189,9 @@ class ModelImage(models.Model):
     image = models.ImageField(verbose_name="Фоточька", upload_to=model_image_path)
     progress = models.ForeignKey(ModelProgress, verbose_name="Процесс покраса", null=True, on_delete=models.RESTRICT)
     model = models.ForeignKey(Model, verbose_name="Модель", on_delete=models.RESTRICT)
+    created = models.DateTimeField(verbose_name="Дата создания", auto_now_add=True, null=False, blank=False)
+
+
+class Artist(models.Model):
+    user = models.OneToOneField(User, verbose_name="Пользователь", on_delete=models.RESTRICT)
+    telegram_name = models.CharField(verbose_name="Ник в телеге", max_length=200, unique=True)
