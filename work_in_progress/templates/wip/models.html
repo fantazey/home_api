@@ -1,4 +1,5 @@
 {% extends 'wip/base.html' %}
+{% load wip_filters %}
 {% block content %}
 <h2>
     Модели пользователя {{ user.username }}
@@ -32,7 +33,7 @@
             <td>
                 {{ model.name }}
                 {% if model.get_last_image_url %}
-                    <img src="{{ model.get_last_image_url }}" width="100" height="100">
+                    {% include 'wip/widgets/model_image.html' %}
                 {% endif %}
             </td>
             <td>
@@ -45,7 +46,7 @@
                 {% if model.status != model.Status.WISHED %}
                     <p>лежит уже {{ model.get_days_since_buy }} дней</p>
                     {% if model.status != model.Status.IN_INVENTORY %}
-                        <p>потрачено {{ model.get_hours_spent }} часов</p>
+                        <p>потрачено {{ model.get_hours_spent|duration }}</p>
                     {% endif %}
                 {% endif %}
             </td>
@@ -62,4 +63,5 @@
     {% endfor %}
 </tbody>
 </table>
+{% include 'wip/widgets/image_modal.html' %}
 {% endblock %}

@@ -6,7 +6,7 @@ from django.urls import reverse
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.db.models import Max
+from django.db.models import Max, Sum
 
 from .models import Model, ModelProgress, ModelImage
 from .forms import AddModelForm, LoginForm, AddProgressForm, RegistrationForm, EditModelForm, ModelFilterForm
@@ -67,7 +67,9 @@ def about(request):
 
 
 def index(request):
-    all_models = Model.objects.filter(hidden=False)[:20]
+    all_models = Model.objects.annotate(last_record=Max('modelprogress__datetime')).\
+                filter(hidden=False).\
+                order_by('-last_record')[:20]
     return render(request, 'wip/index.html', {'models': all_models})
 
 
@@ -235,9 +237,11 @@ def view_progress(request, username, model_id):
     user = users.first()
     model = Model.objects.get(id=model_id, user=user)
     progress_items = ModelProgress.objects.filter(model=model).order_by('-datetime')
+    total = progress_items.aggregate(Sum('time'))
     return render(request, 'wip/view_progress.html', {
         'model': model,
         'user': user,
+        'total': total['time__sum'],
         'progress_items': progress_items
     })
 
@@ -257,6 +261,7 @@ def track_progress(request, model_id):
                                  title=form.cleaned_data['title'],
                                  description=form.cleaned_data['description'],
                                  time=form.cleaned_data['time'],
+                                 status=model.status,
                                  datetime=form.cleaned_data['date'])
         progress.save()
         for file in request.FILES.getlist('images'):

@@ -128,18 +128,35 @@ class Model(models.Model):
     def finish_varnishing(self):
         self._update_status(self.Status.DONE, "Готово!")
 
+    @property
     def get_days_since_buy(self):
         if self.buy_date:
             return (datetime.datetime.now().date() - self.buy_date).days
         return 'хз скока'
 
+    @property
     def get_hours_spent(self):
         return self.modelprogress_set.aggregate(models.Sum('time'))['time__sum']
 
+    @property
+    def get_last_image(self):
+        if self.modelimage_set.exists():
+            return self.modelimage_set.order_by('-id').first().image
+        return None
+
+    @property
     def get_last_image_url(self):
-        if not self.modelimage_set.exists():
-            return None
-        return self.modelimage_set.order_by('-id').first().image.url
+        if self.get_last_image:
+            return self.get_last_image.url
+        return None
+
+    @property
+    def get_last_image_preview_size(self):
+        ratio = self.get_last_image.width / self.get_last_image.height
+        return {
+            'width': 100,
+            'height': 100 / ratio
+        }
 
 
 class ModelProgress(models.Model):
@@ -151,6 +168,7 @@ class ModelProgress(models.Model):
     datetime = models.DateTimeField(verbose_name="Дата записи")
     time = models.FloatField(verbose_name="Затраченое время в часах", default=0.0)
     model = models.ForeignKey(Model, on_delete=models.RESTRICT, verbose_name="Прогресс")
+    status = models.CharField(verbose_name="Статус", max_length=200, choices=Model.Status.choices, null=True)
 
     class Meta:
         verbose_name = 'Работа над моделью'

@@ -1,8 +1,10 @@
 {% extends 'wip/base.html' %}
+{% load wip_filters %}
 {% block content %}
 <h2>
     Прогресс по модели: {{ model.name }}
 </h2>
+<p>Потрачено всего:{{ total|duration }}</p>
 <a href="{% url 'wip:models' user.username %}">Назад</a>
 <table class="celled ui table">
 <thead>
@@ -25,14 +27,22 @@
             <td>{{ progress.datetime }}</td>
             <td>{{ progress.title }}</td>
             <td>{{ progress.description }}</td>
-            <td>{{ progress.time }}</td>
+            <td>{{ progress.time|duration }}</td>
             <td>
                 {% for item in progress.modelimage_set.all %}
-                    <img width="100" height="100" src="{{ item.image.url }}">
+                    <div class="ui image" style="cursor: pointer;">
+                        <img src="{{ item.image.url }}"
+                            width="100"
+                            height="100"
+                            data-init-width="{{ model.get_last_image.width }}"
+                            data-init-height="{{ model.get_last_image.height }}"
+                        >
+                    </div>
                 {% endfor %}
             </td>
         </tr>
     {% endfor %}
 </tbody>
 </table>
+{% include 'wip/widgets/image_modal.html' %}
 {% endblock %}

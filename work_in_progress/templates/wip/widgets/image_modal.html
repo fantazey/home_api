@@ -1,0 +1,23 @@
+<div class="ui fluid modal small">
+    <div class="image content small">
+        <img src="" class="image">
+    </div>
+</div>
+<script>
+$(document).ready(function (){
+    $('.ui.modal').modal();
+    $('td .ui.image').click(function(event) {
+        const image = event.target;
+        const $modalImage = $('.ui.modal .image img');
+        $modalImage.attr("src", image.src);
+        const h = parseFloat(image.dataset['initHeight']);
+        const w = parseFloat(image.dataset['initWidth']);
+        if (h > 600) {
+            const ratio = h/w;
+            $modalImage.attr("height", 600);
+            $modalImage.attr("width", 600/ratio);
+        }
+        $('.ui.modal').modal('show');
+    })
+});
+</script>
