@@ -1,4 +1,3 @@
-import datetime
 import io
 import logging
 
@@ -36,7 +35,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 HELP_TEXT = [
     'Чтобы посмотреть помощь используй команду\n/help',
-    'Чтобы записать время используй команду\n/time'
+    'Чтобы записать время используй команду\n/time id-модели время [описание]\nнапример /time 1 4.5 покрасил пушку'
 ]
 
 
@@ -100,7 +99,7 @@ async def time_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         models = await get_user_models(update.effective_chat.username)
         text = []
         for model in models:
-            message = "Чтобы записать время для модели %s (%s) используй команду: \n/time %s" % \
+            message = "Чтобы записать время для модели %s (%s) используй команду: \n/time %s время [описание]" % \
                       (model['name'], model['status'], model['id'])
             text.append(message)
         await context.bot.send_message(chat_id=update.effective_chat.id, text="\n".join(text))
@@ -121,7 +120,7 @@ async def time_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         title = " ".join(context.args[2:])
         message.append("C пояснением %s" % title)
     model_progress_id = await record_model_progress(model_id, track_time, title, update.effective_chat.username)
-    message.append("из записи: %s" % model_progress_id)
+    message.append("ид записи: %s" % model_progress_id)
     CHAT_PROGRESS_RECORDS[update.effective_chat.id] = model_progress_id
     message.append("Чтобы добавить фотографию к записанному времени отправь в ответ файл")
     await context.bot.send_message(chat_id=update.effective_chat.id, text="\n".join(message))
