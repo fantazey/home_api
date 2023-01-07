@@ -84,7 +84,37 @@ def models(request, username):
         user_models = user_models.filter(status=form.cleaned_data['status'])
     if request.user != user:
         user_models = user_models.filter(hidden=False)
-    return render(request, 'wip/models.html', {'models': user_models, 'user': user, 'filter_form': form})
+
+    progress = ModelProgress.objects.filter(model__user=user)
+    progress_by_date = {}
+    for progress in progress:
+        d = progress.datetime.date().strftime("%d-%m-%Y")
+        progress_by_date[d] = True
+    date_map = build_map(progress_by_date)
+    return render(request, 'wip/models.html', {'models': user_models, 'user': user, 'filter_form': form, 'date_map': date_map})
+
+
+def build_map(progress_by_date):
+    start = datetime.date(2023, 1, 1)
+    end = datetime.date(2023, 12, 31)
+    date_map = []
+    week = [(-50, -50, 0,)] * 7
+    current_date = start
+    week_num = 0
+    keys = progress_by_date.keys()
+    while current_date <= end:
+        date_str = current_date.strftime('%d-%m-%Y')
+        wd = current_date.weekday()
+        x = (week_num * 10) + (week_num + 1) * 2
+        y = (wd * 10) + (wd + 1) * 2
+        value = int(date_str in keys)
+        week[wd] = (x, y, value,)
+        if wd == 6:
+            date_map.append(week)
+            week_num += 1
+            week = [None] * 7
+        current_date = current_date + datetime.timedelta(days=1)
+    return date_map
 
 
 @login_required(login_url='/wip/accounts/login')

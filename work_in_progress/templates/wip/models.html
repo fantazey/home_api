@@ -4,6 +4,7 @@
 <h2>
     Модели пользователя {{ user.username }}
 </h2>
+{% include 'wip/widgets/progress_map.html' %}
 <form action="{% url 'wip:models' user.username %}" class="ui form" method="get">
     {{ filter_form.status.label }}:
     {{ filter_form.status }}

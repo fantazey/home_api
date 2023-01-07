@@ -1,0 +1,11 @@
+<svg width="638" height="86">
+    <rect x="0" y="0" height="86" width="638" fill="black"></rect>
+    {% for week in date_map %}
+        <g id="week-{{ forloop.counter }}">
+            {% for day in week %}
+                <rect x="{{ day.0 }}" y="{{ day.1 }}" width="10" height="10" fill="{% if day.2 == 1 %}#00ff00{% else %}#cccccc{% endif %}">
+                </rect>
+            {% endfor %}
+        </g>
+    {% endfor %}
+</svg>
