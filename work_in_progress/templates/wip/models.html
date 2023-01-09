@@ -51,7 +51,12 @@
                     <a href="{% url 'wip:progress' user.username model.id %}">Подробнее</a>
                 </div>
                 {% if request.user.is_authenticated and request.user == user %}
-                    <a href="{% url 'wip:edit_model' model.id %}">Редактировать</a>
+                    <div>
+                        <a href="{% url 'wip:edit_model' model.id %}">Редактировать</a>
+                    </div>
+                    <div>
+                        <a href="{% url 'wip:delete_model' model.id %}">Удалить</a>
+                    </div>
                     {% include 'wip/model_actions.html' %}
                 {% endif %}
             </td>
