@@ -19,43 +19,50 @@ def log_in(request):
     if request.method == 'GET':
         form = LoginForm()
         return render(request, 'wip/login.html', {'form': form})
+
     form = LoginForm(request.POST)
     if form.is_valid():
         username = form.cleaned_data['username']
         password = form.cleaned_data['password']
         user = authenticate(request, username=username, password=password)
-        if user is None:
-            return HttpResponseBadRequest("ошибка при входе")
-        login(request, user)
-        return redirect(reverse('wip:models', kwargs={'username': request.user.username}))
-    return render(request, 'wip/login.html', {'form': form})
+        if user is not None:
+            login(request, user)
+            return redirect(reverse('wip:models', kwargs={'username': request.user.username}))
+        form.add_error("password", "Не правильный логин или пароль")
+    return render(request, 'wip/login.html', {'form': form}, status=400)
 
 
 def register(request):
     if request.user.is_authenticated:
         return redirect(reverse('wip:index'))
+
     if request.method == 'GET':
         form = RegistrationForm()
         return render(request, 'wip/register.html', {'form': form})
+
     form = RegistrationForm(request.POST)
     if not form.is_valid():
-        return render(request, 'wip/register.html', {'form': form})
+        return render(request, 'wip/register.html', {'form': form}, status=400)
+
     username = form.cleaned_data['username']
     password = form.cleaned_data['password']
     if User.objects.filter(username=username).exists():
         form.add_error('username', 'Пользователь существует')
-        return render(request, 'wip/register.html', {'form': form})
+        return render(request, 'wip/register.html', {'form': form}, status=400)
+
     user = User(username=username)
     user.set_password(password)
     user.save()
     user = authenticate(request, username=username, password=password)
     if user is None:
-        return HttpResponseBadRequest("ошибка при создании пользователя")
+        form.add_error('username', 'ошибка при создании пользователя')
+        return render(request, 'wip/register.html', {'form': form}, status=400)
 
     login(request, user)
     return redirect(reverse('wip:index'))
 
 
+@login_required(login_url='/wip/accounts/login')
 def log_out(request):
     if request.user.is_authenticated:
         logout(request)
@@ -277,7 +284,7 @@ def view_progress(request, username, model_id):
     model = Model.objects.get(id=model_id, user=user)
     progress_items = ModelProgress.objects.filter(model=model).order_by('-datetime')
     total = progress_items.aggregate(Sum('time'))
-    return render(request, 'wip/view_progress.html', {
+    return render(request, 'wip/progress.html', {
         'model': model,
         'user': user,
         'total': total['time__sum'],
@@ -290,7 +297,7 @@ def add_progress(request, model_id):
     model = Model.objects.get(id=model_id, user=request.user)
     if request.method == 'GET':
         form = AddProgressForm()
-        return render(request, 'wip/track_progress.html', {
+        return render(request, 'wip/add_progress.html', {
             'title': 'Добавление прогресса по модели %s' % model.name,
             'model': model,
             'form': form
@@ -309,7 +316,7 @@ def add_progress(request, model_id):
             image.save()
         return redirect(reverse('wip:progress', args=(model.user.username, model.id,)))
 
-    return render(request, 'wip/track_progress.html', {
+    return render(request, 'wip/add_progress.html', {
         'title': 'Добавление прогресса по модели %s' % model.name,
         'model': model,
         'form': form

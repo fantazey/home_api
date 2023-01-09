@@ -6,14 +6,8 @@
         <div class="column">
             <form action="{% url 'wip:login' %}" method="post" class="ui form">
                 {% csrf_token %}
-                <div class="field">
-                    <label>{{ form.username.label }}</label>
-                    {{ form.username }}
-                </div>
-                <div class="small field">
-                    <label>{{ form.password.label }}</label>
-                    {{ form.password }}
-                </div>
+                {% include 'wip/widgets/form-field.html' with field=form.username %}
+                {% include 'wip/widgets/form-field.html' with field=form.password %}
                 <div>
                     <button class="ui button" type="submit">Вход</button>
                 </div>
