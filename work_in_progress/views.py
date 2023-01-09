@@ -1,7 +1,7 @@
 import datetime
 
 from django.shortcuts import render, redirect
-from django.http import HttpResponseBadRequest, Http404
+from django.http import Http404
 from django.urls import reverse
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -126,33 +126,47 @@ def build_map(progress_by_date):
 
 @login_required(login_url='/wip/accounts/login')
 def add_model(request):
+    context = {
+        'title': 'Добавление модели в PileOfShame',
+        'submit_url': reverse('wip:add_model'),
+        'submit_label': 'Добавить'
+    }
     if request.method == 'GET':
-        form = AddModelForm()
-        return render(request, 'wip/add_model.html', {'form': form})
+        context['form'] = AddModelForm()
+        return render(request, 'wip/add_model.html', context)
+
     form = AddModelForm(request.POST)
-    if form.is_valid():
-        name = form.cleaned_data['name']
-        model = Model(name=name, user=request.user)
-        if form.cleaned_data['bs_unit']:
-            model.battlescribe_unit = form.cleaned_data['bs_unit']
-        status = Model.Status.WISHED
-        progress_title = "Захотелось новую модельку"
-        if form.cleaned_data['in_inventory']:
-            status = Model.Status.IN_INVENTORY
-            progress_title = "Куплено"
-            if form.cleaned_data['buy_date']:
-                model.buy_date = form.cleaned_data['buy_date']
-        model.hidden = form.cleaned_data['hidden']
-        model.status = status
-        model.save()
-        progress = ModelProgress(datetime=datetime.datetime.now(), title=progress_title, model=model)
-        progress.save()
+    if not form.is_valid():
+        context['form'] = form
+        return render(request, 'wip/add_model.html', context)
+
+    name = form.cleaned_data['name']
+    model = Model(name=name,
+                  user=request.user,
+                  status=Model.Status.WISHED,
+                  battlescribe_unit=form.cleaned_data['bs_unit'],
+                  buy_date=form.cleaned_data['buy_date'],
+                  hidden = form.cleaned_data['hidden'])
+
+    progress_title = "Захотелось новую модельку"
+    if form.cleaned_data['in_inventory']:
+        model.status = Model.Status.IN_INVENTORY
+        progress_title = "Куплено"
+
+    model.save()
+    progress = ModelProgress(datetime=datetime.datetime.now(), title=progress_title, model=model)
+    progress.save()
     return redirect(reverse('wip:models', kwargs={'username': request.user.username}))
 
 
 @login_required(login_url='/wip/accounts/login')
 def edit_model(request, model_id):
     model = Model.objects.get(id=model_id, user=request.user)
+    context = {
+        'title': 'Редактирование модели %s' % model,
+        'submit_url': reverse('wip:edit_model', kwargs={'model_id': model_id}),
+        'submit_label': 'Сохранить'
+    }
     if request.method == 'GET':
         initial = {
             'name': model.name,
@@ -161,19 +175,19 @@ def edit_model(request, model_id):
             'bs_category': model.battlescribe_unit.bs_category if model.battlescribe_unit is not None else None,
             'hidden': model.hidden
         }
-        form = EditModelForm(initial=initial)
-        return render(request, 'wip/edit_model.html', {'form': form, 'model': model})
+        context['form'] = EditModelForm(initial=initial)
+        return render(request, 'wip/edit_model.html', context)
     form = EditModelForm(request.POST)
-    if form.is_valid():
-        model.name = form.cleaned_data['name']
-        if form.cleaned_data['bs_unit']:
-            model.battlescribe_unit = form.cleaned_data['bs_unit']
-        if form.cleaned_data['buy_date']:
-            model.buy_date = form.cleaned_data['buy_date']
-        model.hidden = form.cleaned_data['hidden']
-        model.save()
-        return redirect(reverse('wip:models', kwargs={'username': request.user.username}))
-    return render(request, 'wip/edit_model.html', {'form': form, 'model': model})
+    if not form.is_valid():
+        context['form'] = form
+        return render(request, 'wip/edit_model.html', context)
+
+    model.name = form.cleaned_data['name']
+    model.battlescribe_unit = form.cleaned_data['bs_unit']
+    model.buy_date = form.cleaned_data['buy_date']
+    model.hidden = form.cleaned_data['hidden']
+    model.save()
+    return redirect(reverse('wip:models', kwargs={'username': request.user.username}))
 
 
 @login_required(login_url='/wip/accounts/login')
@@ -295,13 +309,16 @@ def view_progress(request, username, model_id):
 @login_required(login_url='/wip/accounts/login')
 def add_progress(request, model_id):
     model = Model.objects.get(id=model_id, user=request.user)
+    context = {
+        'title': 'Добавление прогресса для модели %s' + model,
+        'model': model,
+        'submit_url': reverse('wip:add_progress', kwargs={'model_id': model.id}),
+        'button_label': 'Добавить'
+    }
     if request.method == 'GET':
-        form = AddProgressForm()
-        return render(request, 'wip/add_progress.html', {
-            'title': 'Добавление прогресса по модели %s' % model.name,
-            'model': model,
-            'form': form
-        })
+        context['form'] = AddProgressForm()
+        return render(request, 'wip/edit_progress.html', context)
+
     form = AddProgressForm(request.POST, request.FILES)
     if form.is_valid():
         progress = ModelProgress(model=model,
@@ -311,22 +328,23 @@ def add_progress(request, model_id):
                                  status=model.status,
                                  datetime=form.cleaned_data['date'])
         progress.save()
-        for file in request.FILES.getlist('images'):
-            image = ModelImage(progress=progress, model=progress.model, image=file)
-            image.save()
+        progress.add_images(request.FILES.getlist('images'))
         return redirect(reverse('wip:progress', args=(model.user.username, model.id,)))
 
-    return render(request, 'wip/add_progress.html', {
-        'title': 'Добавление прогресса по модели %s' % model.name,
-        'model': model,
-        'form': form
-    })
+    context['form'] = form
+    return render(request, 'wip/edit_progress.html', context)
 
 
 @login_required(login_url='/wip/accounts/login')
 def edit_progress(request, model_id, progress_id):
     model = Model.objects.get(id=model_id, user=request.user)
     progress = ModelProgress.objects.get(id=progress_id, model=model)
+    context = {
+        'title': 'Редактирование записи покраса %s для модели %s' % (progress, model),
+        'model': model,
+        'submit_url': reverse('wip:edit_progress', kwargs={'model_id': model.id, 'progress_id': progress.id}),
+        'button_label': 'Сохранить'
+    }
     if request.method == 'GET':
         initial = {
             'title': progress.title,
@@ -335,13 +353,8 @@ def edit_progress(request, model_id, progress_id):
             'time': progress.time,
             'images': progress.modelimage_set.values('image')
         }
-        form = AddProgressForm(initial=initial)
-        return render(request, 'wip/edit_progress.html', {
-            'title': 'Редактирование записи покраса',
-            'model': progress.model,
-            'progress': progress,
-            'form': form
-        })
+        context['form'] = AddProgressForm(initial=initial)
+        return render(request, 'wip/edit_progress.html', context)
     form = AddProgressForm(request.POST, request.FILES)
     if form.is_valid():
         progress.title = form.cleaned_data['title']
@@ -349,10 +362,10 @@ def edit_progress(request, model_id, progress_id):
         progress.time = form.cleaned_data['time']
         progress.datetime = form.cleaned_data['date']
         progress.save()
-        for file in request.FILES.getlist('images'):
-            image = ModelImage(progress=progress, model=progress.model, image=file)
-            image.save()
+        progress.add_images(request.FILES.getlist('images'))
         return redirect(reverse('wip:progress', args=(model.user.username, model.id,)))
+    context['form'] = form
+    return render(request, 'wip/edit_progress.html', context)
 
 
 @login_required()

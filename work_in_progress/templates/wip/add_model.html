@@ -1,40 +1,25 @@
 {% extends 'wip/base.html' %}
 {% block content %}
 <h2>
-    Добавление модели в PileOfShame
+    {{ title }}
 </h2>
 <a href="{% url 'wip:models' request.user.username %}">Назад</a>
 <div class="ui five column doubling stackable grid container">
     <div class="column"></div>
     <div class="column">
-        <form action="{% url 'wip:add_model' %}" class="ui form" method="post">
+        <form action="{{ submit_url }}" class="ui form" method="post">
         {% csrf_token %}
-            <div class="field">
-                <label>{{ form.bs_category.label }}</label>
-                {{ form.bs_category }}
-            </div>
-            <div class="field">
-                <label>{{ form.bs_unit.label }}</label>
-                {{ form.bs_unit }}
-            </div>
-            <div class="field">
-                <label>{{ form.name.label }}</label>
-                {{ form.name }}
-            </div>
-            <div class="field">
-                <label>{{ form.in_inventory.label }}</label>
-                {{ form.in_inventory }}
-            </div>
-            <div class="field">
-                <label>{{ form.hidden.label }}</label>
-                {{ form.hidden }}
-            </div>
+            {% include 'wip/widgets/form-field.html' with field=form.bs_category %}
+            {% include 'wip/widgets/form-field.html' with field=form.bs_unit %}
+            {% include 'wip/widgets/form-field.html' with field=form.name %}
+            {% include 'wip/widgets/form-field.html' with field=form.in_inventory %}
             <div id="buy-date-field" class="field disabled hidden">
                 <label>{{ form.buy_date.label }}</label>
                 {{ form.buy_date }}
             </div>
+            {% include 'wip/widgets/form-field.html' with field=form.hidden %}
             <div class="field">
-                <button class="ui button" type="submit">Добавить</button>
+                <button class="ui button" type="submit">{{ submit_label }}</button>
             </div>
         </form>
     </div>

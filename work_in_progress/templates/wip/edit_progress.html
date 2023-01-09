@@ -7,35 +7,15 @@
 <div class="ui five column doubling stackable grid container">
     <div class="column"></div>
     <div class="column">
-        <form action="{% url 'wip:edit_progress' model.id progress.id %}" class="ui form" method="post" enctype="multipart/form-data">
+        <form action="{{ submit_url }}" class="ui form" method="post" enctype="multipart/form-data">
         {% csrf_token %}
+            {% include 'wip/widgets/form-field.html' with field=form.title %}
+            {% include 'wip/widgets/form-field.html' with field=form.description %}
+            {% include 'wip/widgets/form-field.html' with field=form.date %}
+            {% include 'wip/widgets/form-field.html' with field=form.time %}
+            {% include 'wip/widgets/form-field.html' with field=form.images %}
             <div class="field">
-                {{ form.title.errors }}
-                <label>{{ form.title.label }}</label>
-                {{ form.title }}
-            </div>
-            <div class="field">
-                {{ form.description.errors }}
-                <label>{{ form.description.label }}</label>
-                {{ form.description }}
-            </div>
-            <div class="field">
-                {{ form.date.errors }}
-                <label>{{ form.date.label }}</label>
-                {{ form.date }}
-            </div>
-            <div class="field">
-                {{ form.time.errors }}
-                <label>{{ form.time.label }}</label>
-                {{ form.time }}
-            </div>
-            <div class="field">
-                {{ form.images.errors }}
-                <label>{{ form.images.label }}</label>
-                {{ form.images }}
-            </div>
-            <div class="field">
-                <button class="ui button" type="submit">Сохранить</button>
+                <button class="ui button" type="submit">{{ button_label }}</button>
             </div>
         </form>
     </div>

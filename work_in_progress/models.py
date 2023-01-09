@@ -180,6 +180,11 @@ class ModelProgress(models.Model):
     def __unicode__(self):
         return "%s - %s - %s - %s" % (self.model.name, self.title, self.time, self.datetime)
 
+    def add_images(self, images):
+        for image_file in images:
+            image = ModelImage(progress=self, model=self.model, image=image_file)
+            image.save()
+
 
 def model_image_path(instance: 'ModelImage', filename: str):
     return 'wip/%s/%s/%s' % (instance.model.user.username, instance.model.name, filename)
