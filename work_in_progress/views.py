@@ -170,6 +170,13 @@ def edit_model(request, model_id):
 
 
 @login_required(login_url='/wip/accounts/login')
+def delete_model(request, model_id):
+    model = Model.objects.get(id=model_id)
+    model.delete()
+    return redirect(reverse('wip:models', kwargs={'username': request.user.username}))
+
+
+@login_required(login_url='/wip/accounts/login')
 def put_in_inventory(request, model_id):
     model = Model.objects.get(id=model_id, user=request.user)
     model.put_in_inventory()
@@ -277,11 +284,12 @@ def view_progress(request, username, model_id):
 
 
 @login_required(login_url='/wip/accounts/login')
-def track_progress(request, model_id):
-    model = Model.objects.get(id=model_id)
+def add_progress(request, model_id):
+    model = Model.objects.get(id=model_id, user=request.user)
     if request.method == 'GET':
         form = AddProgressForm()
         return render(request, 'wip/track_progress.html', {
+            'title': 'Добавление прогресса по модели %s' % model.name,
             'model': model,
             'form': form
         })
@@ -300,6 +308,30 @@ def track_progress(request, model_id):
         return redirect(reverse('wip:progress', args=(model.user.username, model.id,)))
 
     return render(request, 'wip/track_progress.html', {
+        'title': 'Добавление прогресса по модели %s' % model.name,
         'model': model,
         'form': form
     })
+
+
+@login_required(login_url='/wip/accounts/login')
+def edit_progress(request, progress_id):
+    progress = ModelProgress.objects.get(id=progress_id)
+    if request.method == 'GET':
+        initial = {
+            'title': progress.title,
+            'description': progress.description,
+            'date': progress.datetime,
+            'time': progress.time,
+            'images': progress.modelimage_set.values('image')
+        }
+        form = AddProgressForm(initial=initial)
+        return render(request, 'wip/track_progress.html', {
+            'title': 'Редактирование записи покраса',
+            'model': progress.model,
+            'form': form
+        })
+
+
+def delete_progress(request):
+    pass

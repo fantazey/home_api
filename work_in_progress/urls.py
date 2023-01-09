@@ -9,8 +9,6 @@ urlpatterns = [
     path('accounts/register', views.register, name='register'),
     path('about', views.about, name='about'),
 
-    path('add', views.add_model, name='add_model'),
-    path('<int:model_id>/edit', views.edit_model, name='edit_model'),
     # update status actions
     path('<int:model_id>/put_in_inventory', views.put_in_inventory, name='put_in_inventory'),
     path('<int:model_id>/start_assembly', views.start_assembly, name='start_assembly'),
@@ -27,12 +25,21 @@ urlpatterns = [
     path('<int:model_id>/finish_base_decoration', views.finish_base_decoration, name='finish_base_decoration'),
     path('<int:model_id>/start_varnishing', views.start_varnishing, name='start_varnishing'),
     path('<int:model_id>/finish_varnishing', views.finish_varnishing, name='finish_varnishing'),
-    # progress
 
-    path('<int:model_id>/track', views.track_progress, name='track_progress'),
-
+    # index
     path('', views.index, name='index'),
-    path('<str:username>', views.models, name='models'),
-    path('<str:username>/<int:model_id>/progress', views.view_progress, name='progress'),
+    # model
+    path('<str:username>/model', views.models, name='models'),
+    path('model/add', views.add_model, name='add_model'),
+    path('model/<int:model_id>/edit', views.edit_model, name='edit_model'),
+    path('model/<int:model_id>/delete', views.delete_model, name='delete_model'),
+
+    # progress
+    path('<str:username>/model/<int:model_id>/progress', views.view_progress, name='progress'),
+    path('model/<int:model_id>/progress/add', views.add_progress, name='add_progress'),
+    path('model/<int:model_id>/progress/<int:progress_id>/edit',
+         views.edit_progress, name='edit_progress'),
+    path('model/<int:model_id>/progress/<int:progress_id>/delete',
+         views.delete_progress, name='delete_progress'),
 ]
 

@@ -10,6 +10,9 @@
     {{ filter_form.status }}
     <button class="ui button" type="submit">Искать</button>
 </form>
+{% if request.user.is_authenticated and request.user == user %}
+<a href="{% url 'wip:add_model' %}">Добавить</a>
+{% endif %}
 <table class="celled ui table">
 <thead>
     <tr>
@@ -21,14 +24,6 @@
     </tr>
 </thead>
 <tbody>
-    {% if request.user.is_authenticated and request.user == user %}
-        <tr>
-            <td colspan="4"></td>
-            <td>
-                <a href="{% url 'wip:add_model' %}">Добавить</a>
-            </td>
-        </tr>
-    {% endif %}
     {% for model in models %}
         <tr>
             <td>

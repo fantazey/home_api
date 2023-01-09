@@ -9,7 +9,7 @@
 {% else %}
     {% if model.status != model.Status.DONE %}
         <div>
-            <a href="{% url 'wip:track_progress' model.id %}">Записать работу</a>
+            <a href="{% url 'wip:add_progress' model.id %}">Записать работу</a>
         </div>
     {% endif %}
     <div>
