@@ -171,7 +171,9 @@ def edit_model(request, model_id):
 
 @login_required(login_url='/wip/accounts/login')
 def delete_model(request, model_id):
-    model = Model.objects.get(id=model_id)
+    model = Model.objects.get(id=model_id, user=request.user)
+    model_progress = ModelProgress.objects.filter(model=model)
+    model_progress.delete()
     model.delete()
     return redirect(reverse('wip:models', kwargs={'username': request.user.username}))
 
@@ -315,8 +317,9 @@ def add_progress(request, model_id):
 
 
 @login_required(login_url='/wip/accounts/login')
-def edit_progress(request, progress_id):
-    progress = ModelProgress.objects.get(id=progress_id)
+def edit_progress(request, model_id, progress_id):
+    model = Model.objects.get(id=model_id, user=request.user)
+    progress = ModelProgress.objects.get(id=progress_id, model=model)
     if request.method == 'GET':
         initial = {
             'title': progress.title,
@@ -326,12 +329,31 @@ def edit_progress(request, progress_id):
             'images': progress.modelimage_set.values('image')
         }
         form = AddProgressForm(initial=initial)
-        return render(request, 'wip/track_progress.html', {
+        return render(request, 'wip/edit_progress.html', {
             'title': 'Редактирование записи покраса',
             'model': progress.model,
+            'progress': progress,
             'form': form
         })
+    form = AddProgressForm(request.POST, request.FILES)
+    if form.is_valid():
+        progress.title = form.cleaned_data['title']
+        progress.description = form.cleaned_data['description']
+        progress.time = form.cleaned_data['time']
+        progress.datetime = form.cleaned_data['date']
+        progress.save()
+        for file in request.FILES.getlist('images'):
+            image = ModelImage(progress=progress, model=progress.model, image=file)
+            image.save()
+        return redirect(reverse('wip:progress', args=(model.user.username, model.id,)))
 
 
-def delete_progress(request):
-    pass
+@login_required()
+def delete_progress(request, model_id, progress_id):
+    model = Model.objects.get(id=model_id, user=request.user)
+    progress = ModelProgress.objects.get(id=progress_id, model=model)
+    images = ModelImage.objects.filter(progress=progress)
+    images.delete()
+    model = progress.model
+    progress.delete()
+    return redirect(reverse('wip:progress', args=(model.user.username, model.id,)))
