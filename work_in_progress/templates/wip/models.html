@@ -54,10 +54,10 @@
                     <div>
                         <a href="{% url 'wip:edit_model' model.id %}">Редактировать</a>
                     </div>
-                    <div>
+                    {% include 'wip/widgets/model_actions.html' %}
+                    <div style="margin-top: 20px" class="ui red label">
                         <a href="{% url 'wip:delete_model' model.id %}">Удалить</a>
                     </div>
-                    {% include 'wip/widgets/model_actions.html' %}
                 {% endif %}
             </td>
         </tr>

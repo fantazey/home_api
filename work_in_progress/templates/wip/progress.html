@@ -42,7 +42,7 @@
                 <div>
                     <a class="item" href="{% url 'wip:edit_progress' model.id progress.id %}">Редактировать</a>
                 </div>
-                <div>
+                <div style="margin-top: 20px" class="ui red label">
                     <a class="item" href="{% url 'wip:delete_progress' model.id progress.id %}">Удалить</a>
                 </div>
                 {% endif %}

@@ -310,7 +310,7 @@ def view_progress(request, username, model_id):
 def add_progress(request, model_id):
     model = Model.objects.get(id=model_id, user=request.user)
     context = {
-        'title': 'Добавление прогресса для модели %s' + model,
+        'title': 'Добавление прогресса для модели %s' % model,
         'model': model,
         'submit_url': reverse('wip:add_progress', kwargs={'model_id': model.id}),
         'button_label': 'Добавить'
