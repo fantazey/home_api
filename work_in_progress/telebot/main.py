@@ -90,8 +90,18 @@ async def list_progress_command(update: Update, context: ContextTypes.DEFAULT_TY
     if len(context.args) != 1:
         await context.bot.send_message(chat_id=update.effective_chat.id, text="Надо указать ид модели")
     model_id = int(context.args[0])
-    user = await get_user(update.effective_chat.username)
-    model = await get_model(user, model_id)
+    try:
+        user = await get_user(update.effective_chat.username)
+    except Exception as ex:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=ex.args[0])
+        return
+
+    try:
+        model = await get_model(user, model_id)
+    except Model.DoesNotExist:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="Модель не надена")
+        return
+
     progress_list = await get_model_progress_list(user, model)
     text = ["Работы по %s:" % model]
     for progress in progress_list:
@@ -129,7 +139,11 @@ async def progress_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         title = " ".join(context.args[2:])
         message.append("C пояснением %s" % title)
     user = await get_user(update.effective_chat.username)
-    model_progress_id = await record_model_progress(user, model_id, track_time, title)
+    try:
+        model_progress_id = await record_model_progress(user, model_id, track_time, title)
+    except Exception:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="При создании записи возникла ошибка")
+        return
     message.append("id записи для прикрепления фото: %s (командой \"/progress_photo %s\")" %
                    (model_progress_id, model_progress_id))
     await context.bot.send_message(chat_id=update.effective_chat.id, text="\n".join(message))
@@ -148,10 +162,15 @@ async def progress_photo_command(update: Update, context: ContextTypes.DEFAULT_T
         await context.bot.send_message(chat_id=update.effective_chat.id, text="Нужно указать ид модели")
         return
     except ValueError:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="ид модели должен быть целым числом")
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="ид быть целым числом")
         return
     user = await get_user(update.effective_chat.username)
-    model_progress = await get_model_progress(user, model_progress_id)
+    try:
+        model_progress = await get_model_progress(user, model_progress_id)
+    except Exception:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="Запись работы не найдена")
+        return
+
     message = "Чтобы добавить картинку к записи времени %s %s для модели %s отправь фото в чат" % (
         model_progress['title'], model_progress['time'], model_progress['model_name']
     )
@@ -168,8 +187,12 @@ async def model_photo_command(update: Update, context: ContextTypes.DEFAULT_TYPE
     """
     model_id = int(context.args[0])
     user = get_user(update.effective_chat.username)
-    model = await get_model(user, model_id)
-    message = "Чтобы добавить картинку для модели %s отправь фото в чат" % model
+    try:
+        model = await get_model(user, model_id)
+    except Exception:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="Модель не найдена")
+        return
+    message = "Чтобы добавить картинку для модели %s отправь фото в чат" % model.name
     CHAT_MODEL_RECORDS[update.effective_chat.id] = model_id
     await context.bot.send_message(chat_id=update.effective_chat.id, text=message)
 
@@ -212,14 +235,21 @@ async def upload_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         count = len(update.message.photo)
         file_id = update.message.photo[count - 1].file_id
 
-    if file_id is not None:
-        file = await bot.get_file(file_id)
-        file_name = update.effective_chat.username + "_" + file_id
-        await file.download_as_bytearray(buf)
-        image_file = ImageFile(io.BytesIO(buf), name=file_name)
-        user = await get_user(update.effective_chat.username)
+    if file_id is None:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="Файл не найден")
+        return
+
+    file = await bot.get_file(file_id)
+    file_name = update.effective_chat.username + "_" + file_id
+    await file.download_as_bytearray(buf)
+    image_file = ImageFile(io.BytesIO(buf), name=file_name)
+    user = await get_user(update.effective_chat.username)
+    try:
         await save_image_to_progress(user, model_id, model_progress_id, image_file)
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="Картиночка сохранена")
+    except Exception:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="Ошибка сохранения картинки")
+        return
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Картиночка сохранена")
 
 
 @sync_to_async
