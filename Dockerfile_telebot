@@ -1,2 +1,3 @@
 FROM home-api
+COPY . .
 CMD ["python", "manage.py", "start_telebot"]
