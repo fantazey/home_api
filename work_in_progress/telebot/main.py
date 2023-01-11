@@ -18,7 +18,7 @@ from django.contrib.auth.models import User
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
 
-from home_api.private_settings import TEST_TOKEN as TOKEN
+from home_api.private_settings import TOKEN
 from work_in_progress.templatetags.wip_filters import duration
 from work_in_progress.models import Model, ModelProgress, ModelImage, Artist
 
