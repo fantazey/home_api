@@ -3,6 +3,7 @@ import datetime
 from django.shortcuts import render, redirect
 from django.http import Http404
 from django.urls import reverse
+from django.utils import timezone
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -92,11 +93,13 @@ def models(request, username):
     if request.user != user:
         user_models = user_models.filter(hidden=False)
 
-    progress = ModelProgress.objects.filter(model__user=user)
+    progress_list = ModelProgress.objects.filter(model__user=user, time__gt=0)
     progress_by_date = {}
-    for progress in progress:
-        d = progress.datetime.date().strftime("%d-%m-%Y")
-        progress_by_date[d] = True
+    for progress in progress_list:
+        d = timezone.localtime(progress.datetime).date().strftime("%d-%m-%Y")
+        if d not in progress_by_date.keys():
+            progress_by_date[d] = 0
+        progress_by_date[d] += progress.time
     date_map = build_map(progress_by_date)
     return render(request, 'wip/models.html', {'models': user_models, 'user': user, 'filter_form': form, 'date_map': date_map})
 
@@ -114,8 +117,8 @@ def build_map(progress_by_date):
         wd = current_date.weekday()
         x = (week_num * 10) + (week_num + 1) * 2
         y = (wd * 10) + (wd + 1) * 2
-        value = int(date_str in keys)
-        week[wd] = (x, y, value,)
+        value = progress_by_date[date_str] if date_str in keys else 0
+        week[wd] = (x, y, value, current_date.day, x+5, y+8)
         if wd == 6:
             date_map.append(week)
             week_num += 1
