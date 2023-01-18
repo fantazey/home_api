@@ -131,7 +131,7 @@ async def progress_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         matcher = re.compile(r'((?P<hours>\d+)ч(ас)?\.?)?((?P<minutes>\d+)м(ин)?\.?)?')
         res = matcher.match(context.args[1])
         if len(res.groups()) > 0:
-            track_time = float(res.group("hour") or 0) + (float(res.group("minutes") or 0)/60)
+            track_time = float(res.group("hours") or 0) + (float(res.group("minutes") or 0)/60)
         else:
             track_time = float(context.args[1].replace(',', '.'))
     except ValueError:
