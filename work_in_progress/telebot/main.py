@@ -140,7 +140,7 @@ async def progress_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                             "1 или 0.5 или 0,5 или 1ч15м или 1час20мин или 20мин или 1ч.30мин.")
         return
 
-    message = ["Записал время %s часов для модели %s" % (track_time, model_id)]
+    message = ["Записал время %s часов для модели %s" % (duration(track_time), model_id)]
     title = ""
     if len(context.args) > 3:
         title = " ".join(context.args[2:])
