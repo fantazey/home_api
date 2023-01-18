@@ -65,7 +65,10 @@ class EditModelForm(forms.Form):
                                              queryset=BSUnit.objects.all(),
                                              widget=forms.Select(attrs={'class': 'ui fluid search selection dropdown'}),
                                              required=False)
-    images = forms.ImageField(label="Картиночки", widget=forms.ClearableFileInput(attrs={'multiple': True}), required=False)
+    status = forms.ChoiceField(label="Статус", required=False, choices=Model.Status.choices)
+    images = forms.ImageField(label="Картиночки",
+                              widget=forms.ClearableFileInput(attrs={'multiple': True}),
+                              required=False)
     hidden = forms.BooleanField(label="Скрыть", required=False, initial=False)
 
 
@@ -74,6 +77,7 @@ class AddProgressForm(forms.Form):
     description = forms.CharField(label='Подробнее', widget=forms.Textarea, required=False)
     date = forms.DateTimeField(label='Дата проведения работы', initial=datetime.now)
     time = forms.FloatField(label="Затраченое время", initial=0.0)
+    status = forms.ChoiceField(label="В статусе", choices=Model.Status.choices)
     images = forms.ImageField(label="Картиночки",
                               widget=forms.ClearableFileInput(attrs={'multiple': True}),
                               required=False)

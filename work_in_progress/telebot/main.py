@@ -9,6 +9,7 @@
 """
 import io
 import logging
+import re
 
 from asgiref.sync import sync_to_async
 from django.db.models import Max
@@ -127,10 +128,16 @@ async def progress_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     try:
         model_id = int(context.args[0])
-        track_time = float(context.args[1].replace(',', '.'))
+        matcher = re.compile(r'((?P<hours>\d+)ч(ас)?\.?)?((?P<minutes>\d+)м(ин)?\.?)?')
+        res = matcher.match(context.args[1])
+        if len(res.groups()) > 0:
+            track_time = float(res.group("hour") or 0) + (float(res.group("minutes") or 0)/60)
+        else:
+            track_time = float(context.args[1].replace(',', '.'))
     except ValueError:
         await context.bot.send_message(chat_id=update.effective_chat.id,
-                                       text="Первый и второй параметры должны быть числами: 1 или 0.5 или 0,5")
+                                       text="Первый и второй параметры должны быть числами: " +
+                                            "1 или 0.5 или 0,5 или 1ч15м или 1час20мин или 20мин или 1ч.30мин.")
         return
 
     message = ["Записал время %s часов для модели %s" % (track_time, model_id)]
@@ -319,7 +326,7 @@ def get_model_progress(user: User, progress_id: int) -> dict:
 
 @sync_to_async
 def get_model_progress_list(user: User, model: Model) -> list[dict]:
-    progress_list = ModelProgress.objects.filter(model=model, model__user=user)[:5]
+    progress_list = ModelProgress.objects.filter(model=model, model__user=user).order_by('-datetime')[:5]
     result = []
     for progress in progress_list:
         result.append({

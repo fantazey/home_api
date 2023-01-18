@@ -4,7 +4,18 @@
 <h2>
     Модели пользователя {{ user.username }}
 </h2>
-{% include 'wip/widgets/progress_map.html' %}
+<div class="ui grid relaxed">
+    <div class="column"></div>
+    <div class="eight wide column">
+        {% include 'wip/widgets/progress_map.html' %}
+    </div>
+    <div class="four wide column">
+        {% for item in time_status_map %}
+            <div>{{ item.0 }} - {{ item.1|duration }}</div>
+        {% endfor %}
+    </div>
+    <div class="column"></div>
+</div>
 <form action="{% url 'wip:models' user.username %}" class="ui form" method="get">
     {{ filter_form.status.label }}:
     {{ filter_form.status }}

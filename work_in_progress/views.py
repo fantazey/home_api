@@ -101,7 +101,15 @@ def models(request, username):
             progress_by_date[d] = 0
         progress_by_date[d] += progress.time
     date_map = build_map(progress_by_date)
-    return render(request, 'wip/models.html', {'models': user_models, 'user': user, 'filter_form': form, 'date_map': date_map})
+    sum_time_by_status = progress_list.filter(status__isnull=False).values("status").annotate(total_time=Sum('time'))
+    status_map = [(Model.Status(x['status']).label, x['total_time']) for x in sum_time_by_status]
+    return render(request, 'wip/models.html', {
+        'models': user_models,
+        'user': user,
+        'filter_form': form,
+        'date_map': date_map,
+        'time_status_map': status_map
+    })
 
 
 def build_map(progress_by_date):
@@ -175,6 +183,7 @@ def edit_model(request, model_id):
             'name': model.name,
             'buy_date': model.buy_date.strftime('%Y-%m-%d') if model.buy_date is not None else None,
             'bs_unit': model.battlescribe_unit,
+            'status': model.status,
             'bs_category': model.battlescribe_unit.bs_category if model.battlescribe_unit is not None else None,
             'hidden': model.hidden
         }
@@ -188,6 +197,14 @@ def edit_model(request, model_id):
     model.name = form.cleaned_data['name']
     model.battlescribe_unit = form.cleaned_data['bs_unit']
     model.buy_date = form.cleaned_data['buy_date']
+    if model.status != form.cleaned_data['status']:
+        progress = ModelProgress(model=model,
+                                 title="Смена статуса на: %s" % Model.Status(form.cleaned_data['status']).label,
+                                 time=0,
+                                 status=model.status,
+                                 datetime=datetime.datetime.now())
+        progress.save()
+    model.status = form.cleaned_data['status']
     model.hidden = form.cleaned_data['hidden']
     model.save()
     return redirect(reverse('wip:models', kwargs={'username': request.user.username}))
@@ -319,7 +336,10 @@ def add_progress(request, model_id):
         'button_label': 'Добавить'
     }
     if request.method == 'GET':
-        context['form'] = AddProgressForm()
+        initial = {
+            'status': model.status,
+        }
+        context['form'] = AddProgressForm(initial=initial)
         return render(request, 'wip/edit_progress.html', context)
 
     form = AddProgressForm(request.POST, request.FILES)
@@ -328,7 +348,7 @@ def add_progress(request, model_id):
                                  title=form.cleaned_data['title'],
                                  description=form.cleaned_data['description'],
                                  time=form.cleaned_data['time'],
-                                 status=model.status,
+                                 status=form.cleaned_data['time'],
                                  datetime=form.cleaned_data['date'])
         progress.save()
         progress.add_images(request.FILES.getlist('images'))
@@ -354,6 +374,7 @@ def edit_progress(request, model_id, progress_id):
             'description': progress.description,
             'date': progress.datetime,
             'time': progress.time,
+            'status': progress.status,
             'images': progress.modelimage_set.values('image')
         }
         context['form'] = AddProgressForm(initial=initial)
@@ -364,6 +385,7 @@ def edit_progress(request, model_id, progress_id):
         progress.description = form.cleaned_data['description']
         progress.time = form.cleaned_data['time']
         progress.datetime = form.cleaned_data['date']
+        progress.status = form.cleaned_data['status']
         progress.save()
         progress.add_images(request.FILES.getlist('images'))
         return redirect(reverse('wip:progress', args=(model.user.username, model.id,)))
