@@ -140,10 +140,9 @@ class Model(models.Model):
 
     @property
     def get_last_image(self):
+        if self.modelimage_set.exists():
+            return self.modelimage_set.order_by('-id').first().image
         return None
-        # if self.modelimage_set.exists():
-        #     return self.modelimage_set.order_by('-id').first().image
-        # return None
 
     @property
     def get_last_image_url(self):
@@ -153,11 +152,6 @@ class Model(models.Model):
 
     @property
     def get_last_image_preview_size(self):
-        if self.get_last_image is None:
-            return {
-                'width': 0,
-                'height': 0
-            }
         ratio = self.get_last_image.width / self.get_last_image.height
         return {
             'width': 100,
