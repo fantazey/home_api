@@ -25,6 +25,7 @@ from work_in_progress.models import Model, ModelProgress, ModelImage, Artist
 
 CHAT_PROGRESS_RECORDS = {}
 CHAT_MODEL_RECORDS = {}
+PARSE_MODE = 'MarkdownV2'
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -38,23 +39,23 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as ex:
         await context.bot.send_message(chat_id=update.effective_chat.id, text=ex.args[0])
         return
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="\n".join(HELP_TEXT))
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="\n".join(HELP_TEXT), parse_mode=PARSE_MODE)
 
 
 HELP_TEXT = [
-    'Чтобы посмотреть помощь - \n/help',
-    'Чтобы вывести 5 последних моделей над которыми велась работа - \n/list_models',
-    'Чтобы вывести 5 последних записей о покрасе по модели над которой велась работа - \n/list_progress id-модели',
-    'Чтобы записать время - \n/progress id-модели время [описание]\n' +
-    'например "/progress 1 4.5 покрасил пушку"',
-    'Чтобы добавить фотографию к записанному времени - \n/progress_photo id-записи вемени\n' +
-    'например "/progress_photo 219"',
-    'Чтобы добавить фотографию к модели - \n/model_photo id-модели\nнапример "/model_photo 100"'
+    'Чтобы посмотреть помощь \- `/help`',
+    'Чтобы вывести 5 последних моделей над которыми велась работа \- `/list_models`',
+    'Чтобы вывести 5 последних записей о покрасе по модели над которой велась работа \- `/list_progress id-модели`',
+    'Чтобы записать время \- `/progress id-модели время [описание]` ' +
+    'например */progress 1 1ч15м покрасил пушку*',
+    'Чтобы добавить фотографию к записанному времени \- `/progress_photo id-записи вемени` ' +
+    'например */progress\_photo 219*',
+    'Чтобы добавить фотографию к модели \- `/model_photo id-модели` например */model\_photo 100*'
 ]
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_message(chat_id=update.effective_chat.id, text='\n'.join(HELP_TEXT))
+    await context.bot.send_message(chat_id=update.effective_chat.id, text='\n'.join(HELP_TEXT), parse_mode=PARSE_MODE)
 
 
 async def list_models_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -139,21 +140,21 @@ async def progress_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                        text="Первый и второй параметры должны быть числами: " +
                                             "1 или 0.5 или 0,5 или 1ч15м или 1час20мин или 20мин или 1ч.30мин.")
         return
-
-    message = ["Записал время %s часов для модели %s" % (duration(track_time), model_id)]
-    title = ""
-    if len(context.args) > 3:
-        title = " ".join(context.args[2:])
-        message.append("C пояснением %s" % title)
     user = await get_user(update.effective_chat.username)
+    model = await get_model(user, model_id)
+    message = ["Записал время *%s* часов для модели _%s \- %s_" % (duration(track_time), model.id, model.name)]
+    title = ""
+    if len(context.args) >= 3:
+        title = " ".join(context.args[2:])
+        message.append("C пояснением: _%s_" % title)
+
     try:
         model_progress_id = await record_model_progress(user, model_id, track_time, title)
     except Exception:
         await context.bot.send_message(chat_id=update.effective_chat.id, text="При создании записи возникла ошибка")
         return
-    message.append("id записи для прикрепления фото: %s (командой \"/progress_photo %s\")" %
-                   (model_progress_id, model_progress_id))
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="\n".join(message))
+    message.append("Для прикрепления фотографии выполни: `/progress_photo %s`" % model_progress_id)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="\n".join(message), parse_mode='MarkdownV2')
 
 
 async def progress_photo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
