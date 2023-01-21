@@ -3,6 +3,8 @@ import datetime
 from django.db import models
 from django.contrib.auth.models import User
 
+from home_api.settings import DEBUG
+
 
 class BSCategory(models.Model):
     """
@@ -140,6 +142,9 @@ class Model(models.Model):
 
     @property
     def get_last_image(self):
+        if DEBUG:
+            return None
+
         if self.modelimage_set.exists():
             return self.modelimage_set.order_by('-id').first().image
         return None

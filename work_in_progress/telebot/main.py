@@ -19,13 +19,14 @@ from django.contrib.auth.models import User
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
 
-from home_api.private_settings import TOKEN
+from home_api.private_settings import TEST_TOKEN, TOKEN, DEBUG
 from work_in_progress.templatetags.wip_filters import duration
 from work_in_progress.models import Model, ModelProgress, ModelImage, Artist
 
 CHAT_PROGRESS_RECORDS = {}
 CHAT_MODEL_RECORDS = {}
 PARSE_MODE = 'MarkdownV2'
+
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -375,7 +376,8 @@ def save_image_to_progress(user: User, model_id: int, model_progress_id: int, im
 
 
 def run_telebot():
-    application = ApplicationBuilder().token(TOKEN).build()
+    bot_token = TEST_TOKEN if DEBUG else TOKEN
+    application = ApplicationBuilder().token(bot_token).build()
     start_handler = CommandHandler('start', start_command)
     application.add_handler(start_handler)
 

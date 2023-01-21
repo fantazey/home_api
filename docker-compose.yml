@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+  web:
+    container_name: home-api-web
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: home-api:latest
+    command: python manage.py runserver 0.0.0.0:8000 --insecure
+    volumes:
+      - /home/pi/Projects/home-api/media:/usr/src/app/media
+    ports:
+      - 8001:8000
+    depends_on:
+      - db
+  bot:
+    container_name: home-api-telebot
+    image: home-api:latest
+    command: python manage.py start_telebot
+    depends_on:
+      - web
+
+  db:
+    container_name: home-api-database
+    image: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin
+
+volumes:
+  postgres_data:
