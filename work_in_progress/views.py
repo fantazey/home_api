@@ -348,7 +348,7 @@ def add_progress(request, model_id):
                                  title=form.cleaned_data['title'],
                                  description=form.cleaned_data['description'],
                                  time=form.cleaned_data['time'],
-                                 status=form.cleaned_data['time'],
+                                 status=form.cleaned_data['status'],
                                  datetime=form.cleaned_data['date'])
         progress.save()
         progress.add_images(request.FILES.getlist('images'))
