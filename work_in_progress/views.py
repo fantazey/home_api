@@ -87,7 +87,9 @@ def models(request, username):
         return Http404("Пользователь не найден")
     user = users.first()
     form = ModelFilterForm(request.GET)
-    user_models = Model.objects.annotate(last_record=Max('modelprogress__datetime')).filter(user__username=username).order_by('-last_record', 'buy_date', 'created')
+    user_models = Model.objects.annotate(last_record=Max('modelprogress__datetime'))\
+        .filter(user__username=username)\
+        .order_by('-last_record', 'buy_date', 'created')
     if form.is_valid():
         user_models = user_models.filter(status=form.cleaned_data['status'])
     if request.user != user:

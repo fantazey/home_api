@@ -1,7 +1,10 @@
 import datetime
+from os import path
 
 from django.db import models
 from django.contrib.auth.models import User
+
+from home_api.settings import DEBUG
 
 
 class BSCategory(models.Model):
@@ -83,7 +86,10 @@ class Model(models.Model):
         return "%s - %s" % (self.name, self.get_status_display())
 
     def _update_status(self, new_status, progress_title):
-        progress = ModelProgress(model=self, datetime=datetime.datetime.now(), title=progress_title)
+        progress = ModelProgress(model=self,
+                                 datetime=datetime.datetime.now(),
+                                 title=progress_title,
+                                 status=self.status)
         progress.save()
         self.status = new_status
         self.save()
@@ -140,9 +146,12 @@ class Model(models.Model):
 
     @property
     def get_last_image(self):
-        if self.modelimage_set.exists():
-            return self.modelimage_set.order_by('-id').first().image
-        return None
+        if not self.modelimage_set.exists():
+            return None
+        image = self.modelimage_set.order_by('-id').first().image
+        if DEBUG and not path.exists(image.path):
+            return None
+        return image
 
     @property
     def get_last_image_url(self):

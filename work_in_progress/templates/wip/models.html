@@ -1,5 +1,6 @@
 {% extends 'wip/base.html' %}
 {% load wip_filters %}
+{% load static %}
 {% block content %}
 <h2>
     Модели пользователя {{ user.username }}
@@ -16,64 +17,68 @@
     </div>
     <div class="column"></div>
 </div>
-<form action="{% url 'wip:models' user.username %}" class="ui form" method="get">
-    {{ filter_form.status.label }}:
+<form id="filter_form" action="{% url 'wip:models' user.username %}" class="form ui" method="get">
     {{ filter_form.status }}
-    <button class="ui button" type="submit">Искать</button>
+<a id="submit">
+    <i class="search icon"></i>
+    Искать
+</a>
+<a id="reset_filter_form">
+    <i class="undo icon"></i>Сброс
+</a>
 </form>
 {% if request.user.is_authenticated and request.user == user %}
-<a href="{% url 'wip:add_model' %}">Добавить</a>
+<a href="{% url 'wip:add_model' %}">
+<i class="icon plus square outline"></i>
+    Добавить
+</a>
 {% endif %}
-<table class="celled ui table">
-<thead>
-    <tr>
-        <th>Название</th>
-        <th>Данные BS</th>
-        <th>Статус</th>
-        <th>Дней в ящике/Часов потрачено</th>
-        <th>Действия</th>
-    </tr>
-</thead>
-<tbody>
+<div class="ui cards">
     {% for model in models %}
-        <tr>
-            <td>
-                {{ model.name }}
-                {% if model.get_last_image_url %}
-                    {% include 'wip/widgets/model_image.html' %}
-                {% endif %}
-            </td>
-            <td>
-                {% if model.battlescribe_unit %}
-                    {{ model.battlescribe_unit.name }} [{{ model.battlescribe_unit.bs_category.name }}]
-                {% endif %}
-            </td>
-            <td>{{ model.get_status_display }}</td>
-            <td>
-                {% if model.status != model.Status.WISHED %}
-                    <p>лежит уже {{ model.get_days_since_buy }} дней</p>
-                    {% if model.status != model.Status.IN_INVENTORY %}
-                        <p>потрачено {{ model.get_hours_spent|duration }}</p>
-                    {% endif %}
-                {% endif %}
-            </td>
-            <td>
-                <div>
-                    <a href="{% url 'wip:progress' user.username model.id %}">Подробнее</a>
+        <div class="ui card">
+        {% if model.get_last_image_url %}
+            {% include 'wip/widgets/model_image.html' %}
+        {% else %}
+            <img src="{% static 'wip/img/default/ready.jpg' %}">
+        {% endif %}
+        <div class="content">
+            <a class="header" href="">
+                <a href="{% url 'wip:progress' user.username model.id %}">{{ model.name }}</a>
+            </a>
+            <div class="meta">
+                {{ model.get_status_display }} | {{ model.get_hours_spent|duration }}
+            </div>
+            <div class="description">
+
+            </div>
+        </div>
+        <div class="extra content">
+            {% if request.user.is_authenticated and request.user == user %}
+                <a href="{% url 'wip:edit_model' model.id %}">
+                    <i class="pencil icon"></i>
+                    Редактировать
+                </a>
+                {% include 'wip/widgets/model_actions.html' %}
+                <div style="margin-top: 30px">
+                    <a href="{% url 'wip:delete_model' model.id %}">
+                        <i class="trash alternate outline icon"></i>
+                        Удалить
+                    </a>
                 </div>
-                {% if request.user.is_authenticated and request.user == user %}
-                    <div>
-                        <a href="{% url 'wip:edit_model' model.id %}">Редактировать</a>
-                    </div>
-                    {% include 'wip/widgets/model_actions.html' %}
-                    <div style="margin-top: 20px" class="ui red label">
-                        <a href="{% url 'wip:delete_model' model.id %}">Удалить</a>
-                    </div>
-                {% endif %}
-            </td>
-        </tr>
+            {% endif %}
+        </div>
+</div>
     {% endfor %}
-</tbody>
-</table>
+</div>
+<script>
+$(document).ready(() => {
+ $('#reset_filter_form').click(() => {
+     window.location.href = window.location.href.split("?")[0];
+ })
+    $('a#submit').click(() => {
+        $('#filter_form').submit();
+    })
+})
+</script>
 {% include 'wip/widgets/image_modal.html' %}
 {% endblock %}
