@@ -18,8 +18,10 @@ from django.urls import path, include, re_path
 from django.views.static import serve
 
 from home_api.settings import MEDIA_ROOT, STATIC_ROOT
+from home_api.views import index
 
 urlpatterns = [
+    path('', index, name='index'),
     path('weather/', include('weather.urls')),
     path('wip/', include('work_in_progress.urls')),
     path('admin/', admin.site.urls),

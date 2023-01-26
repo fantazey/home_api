@@ -1,0 +1,72 @@
+{% load static %}
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <style>
+    body {
+      background-color: whitesmoke;
+    }
+    .container {
+      padding-top: 20px;
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      gap: 15px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+    .button {
+      width: 200px;
+      height: 200px;
+      padding: 40px;
+      box-shadow: -3px 3px rgba(56, 229, 85, 0.3);
+      background: linear-gradient(165deg,#36c152,#76d439);
+      border-radius: 5px;
+      justify-content: center;
+      align-items: center;
+      display: flex;
+      flex-direction: row;
+      transition: all 0.5s ease;
+    }
+    .button:hover {
+      transform: scale(1.1,1.1);
+      background: linear-gradient(165deg,#76d439,#36c152);
+    }
+    .button a {
+      color: white;
+      font-size: 30px;
+      line-height: 34px;
+      font-weight: bold;
+      text-decoration: none;
+      text-align: center;
+      font-family: monospace;
+    }
+  </style>
+  <title>Dashboard</title>
+</head>
+<body>
+  <div class="container">
+    <div class="button">
+      <a href="{% url 'wip:index' %}">Покрас</a>
+    </div>
+    <div class="button">
+      <a href="https://github.com/fantazey">GitHub</a>
+    </div>
+{#    <div class="button">#}
+{#      <a href="{% static 'main/resume.pdf' %}">Резюме</a>#}
+{#    </div>#}
+    <div class="button">
+      <a href="http://blog.fantazey.ru">Блог</a>
+    </div>
+    <div class="button">
+      <a href="http://weather.fantazey.ru">Погода</a>
+    </div>
+    <div class="button">
+      <a href="http://travel.fantazey.ru">Путешествия</a>
+    </div>
+  </div>
+</body>
+</html>
