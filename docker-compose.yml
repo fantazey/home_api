@@ -9,7 +9,7 @@ services:
     image: home-api:latest
     command: python manage.py runserver 0.0.0.0:8000 --insecure
     volumes:
-      - /home/pi/Projects/home-api/media:/usr/src/app/media
+      - /Users/andrew/projects/home_api/media:/usr/src/app/media
     ports:
       - 8001:8000
     depends_on:
@@ -20,7 +20,6 @@ services:
     command: python manage.py start_telebot
     depends_on:
       - web
-
   db:
     container_name: home-api-database
     image: postgres
