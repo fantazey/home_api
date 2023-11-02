@@ -94,6 +94,29 @@ class Model(models.Model):
         self.status = new_status
         self.save()
 
+    @staticmethod
+    def stages() -> list[tuple[Status, str]]:
+        return [
+            (Model.Status.IN_INVENTORY, "Куплено"),
+            (Model.Status.ASSEMBLING, "Начал сборку"),
+            (Model.Status.ASSEMBLED, "Закончил сборку"),
+            (Model.Status.PRIMING, "Начал грунтовать"),
+            (Model.Status.PRIMED, "Загрунтовано"),
+            (Model.Status.BATTLE_READY_PAINTING, "Начал красить в базу"),
+            (Model.Status.BATTLE_READY_PAINTED, "Покрасил в базу"),
+            (Model.Status.PARADE_READY_PAINTING, "Начал добавлять хайлайты"),
+            (Model.Status.PARADE_READY_PAINTED, "Законил хайлайты"),
+            (Model.Status.BASE_DECORATING, "Начал оформлять подставки"),
+            (Model.Status.BASE_DECORATED, "Подставки оформлены"),
+            (Model.Status.VARNISHING, "Начал задувать лаком"),
+            (Model.Status.DONE, "Готово"),
+        ]
+
+    def change_status(self, status):
+        res = list(filter(lambda x: x[0] == status, Model.stages()))
+        if len(res) > 0:
+            self._update_status(res[0][0], res[0][1])
+
     def put_in_inventory(self):
         self.buy_date = datetime.datetime.now()
         self._update_status(self.Status.IN_INVENTORY, "Куплено")
@@ -142,7 +165,7 @@ class Model(models.Model):
 
     @property
     def get_hours_spent(self):
-        return self.modelprogress_set.aggregate(models.Sum('time'))['time__sum']
+        return self.modelprogress_set.aggregate(models.Sum('time'))['time__sum'] or 0
 
     @property
     def get_last_image(self):

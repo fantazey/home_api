@@ -6,6 +6,8 @@ register = template.Library()
 
 @register.filter(name='duration')
 def duration(record: float) -> str:
+    if record is None:
+        return ""
     hours = trunc(record)
     decimal_minutes = record - hours
     minutes = trunc(decimal_minutes * 60)
