@@ -115,8 +115,8 @@ def models(request, username):
 
 
 def build_map(progress_by_date):
-    start = datetime.date(2023, 1, 1)
-    end = datetime.date(2023, 12, 31)
+    start = datetime.date.today() - datetime.timedelta(days=368)
+    end = datetime.date.today() + datetime.timedelta(days=30)
     date_map = []
     week = [(-50, -50, 0,)] * 7
     current_date = start
