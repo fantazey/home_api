@@ -197,12 +197,21 @@ async def progress_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     :return:
     """
     model_id = context.user_data['model_id']
-    description = ""
     track_time = 0
-    res = TIME_MATCHER.match(update.message.text)
-    if len(res.groups()) > 0:
-        track_time = float(res.group("hours") or 0) + (float(res.group("minutes") or 0) / 60)
-        description = res.group("description")
+    time_data = update.message.text.split(" ")[0]
+    description = " ".join(update.message.text.split(" ")[1:])
+    hours = 0
+    minutes = 0
+    if 'ч' in time_data:
+        hours = int(time_data.split('ч')[0])
+        time_data = "".join(time_data.split('ч')[1:])
+    if 'м' in time_data:
+        minutes = int(time_data.split('м')[0])
+        if minutes > 60:
+            hours += minutes // 60
+            minutes = minutes % 60
+
+        track_time = float(hours) + (float(minutes) / 60)
     if track_time == 0:
         return
     user = await get_user(update.effective_chat.username)
@@ -273,6 +282,16 @@ async def add_model_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await handle_model_actions(update, context)
 
 
+async def want_model_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    model_name = update.message.text.replace("хочу ", "")
+    user = await get_user(update.effective_chat.username)
+    model_id = await want_model(user, model_name)
+    await get_model_dict(user, model_id)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Модель сохранена")
+    context.user_data["model_id"] = model_id
+    await handle_model_actions(update, context)
+
+
 async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     tb_list = traceback.format_exception(None, context.error, context.error.__traceback__)
     tb_string = "".join(tb_list)
@@ -313,9 +332,10 @@ def get_user_models_paged(user: User, page: int) -> list[dict]:
     """
     slice_start = page * 5
     slice_end = (page + 1) * 5
-    models = Model.objects.annotate(
-        last_record=Max('modelprogress__datetime')
-    ).filter(user=user).order_by('-last_record')[slice_start:slice_end]
+    olddate = timezone.now() - datetime.timedelta(days=2000)
+    models = Model.objects.filter(user=user)\
+        .annotate(max_date=Max('modelprogress__datetime', default=olddate))\
+        .order_by('-max_date')[slice_start:slice_end]
     result = []
     for model in models:
         result.append({
@@ -398,6 +418,13 @@ def create_model(user: User, name: str) -> int:
 
 
 @sync_to_async
+def want_model(user: User, name: str) -> int:
+    model = Model(name=name, user=user, status=Model.Status.WISHED, buy_date=datetime.datetime.now())
+    model.save()
+    return model.id
+
+
+@sync_to_async
 def update_model_status(user: User, model_id: int, status: str) -> None:
     model = Model.objects.get(id=model_id, user=user)
     model.change_status(status)
@@ -409,8 +436,9 @@ def run_telebot():
     application.add_handler(CommandHandler('start', start_command))
     application.add_handler(MessageHandler(filters.PHOTO, upload_photo))
     application.add_handler(CallbackQueryHandler(keyboard_handler))
-    application.add_handler(MessageHandler(filters.Regex("^\d+ч|\d+м/"), progress_command))
+    application.add_handler(MessageHandler(filters.Regex("^\d+(ч|м).*"), progress_command))
     application.add_handler(MessageHandler(filters.Regex("^купил .*"), add_model_handler))
+    application.add_handler(MessageHandler(filters.Regex("^хочу .*"), want_model_handler))
     application.add_error_handler(error_handler)
 
     application.run_polling()
