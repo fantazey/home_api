@@ -1,0 +1,18 @@
+{% extends 'postcards/base.html' %}
+{% block header %}
+    <h1 class="ui header"> {{ title }}</h1>
+{% endblock header %}
+{% block content %}
+    <div class="ui two column container grid">
+        <div class="column">
+            <form  class="ui form" method="post" enctype="multipart/form-data" action="{% url 'postcards:edit' postcard.id %}">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" value="Редактировать" class="ui button primary">
+
+</form>
+             <a href="{% url 'postcards:index' %}"><button class="ui button">Назад</button></a>
+        </div>
+    </div>
+
+{% endblock content %}
