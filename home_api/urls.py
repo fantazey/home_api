@@ -24,6 +24,7 @@ urlpatterns = [
     path('', index, name='index'),
     path('weather/', include('weather.urls')),
     path('wip/', include('work_in_progress.urls')),
+    path('postcards/', include('postcards.urls')),
     path('admin/', admin.site.urls),
     re_path(r"media/(?P<path>.*)$", serve, kwargs={'document_root': MEDIA_ROOT}),
     re_path(r"static/(?P<path>.*)$", serve, kwargs={'document_root': STATIC_ROOT})

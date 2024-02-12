@@ -1,0 +1,32 @@
+{% extends 'postcards/base.html' %}
+{% block header %}
+
+   <h1 class="ui header" style="color: #4f20b5;font-size: 4em;text-align: center">Доступные к отправке</h1>
+
+{% endblock header %}
+{% block content %}
+    <a href="{% url 'postcards:index' %}">
+     <button class="small ui button secondary"> na glavnuyu</button>
+    </a>
+    <a href="{% url 'postcards:library_add' %}">
+     <button class="small ui button secondary">Добавить новую открытку</button>
+    </a>
+
+<div class="ui grid container aligned center">
+
+    {% for postcard in postcards %}
+        <div class="ui card" style="margin: 15px; background-color: lightgrey">
+            {% if postcard.image %}
+                <div class="ui image" style="cursor: pointer;">
+                 <img src="{{ postcard.image.url }}" style="max-height: 300px">
+                </div>
+                </div>
+            {% endif %}
+            <div class="extra content">
+                <a href="{% url 'postcards:library_deletegit stet' postcard.id %}">
+                    <i class="trash alternate icon"></i>
+                </a>
+            </div>
+        </div>
+    {% endfor %}
+{% endblock content %}
