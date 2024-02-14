@@ -1,7 +1,7 @@
 {% if model.status == model.Status.WISHED %}
     <div>
         <a href="{% url 'wip:put_in_inventory' model.id %}">Купил</a>
-    <div>
+    </div>
 {% elif model.status == model.Status.IN_INVENTORY %}
     <div>
         <a href="{% url 'wip:start_assembly' model.id %}"><i class="arrow alternate circle up outline icon"></i>Взялся собирать</a>
