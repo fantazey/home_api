@@ -87,7 +87,8 @@ def models(request, username):
         return Http404("Пользователь не найден")
     user = users.first()
     form = ModelFilterForm(request.GET)
-    user_models = Model.objects.annotate(last_record=Max('modelprogress__datetime'))\
+    olddate = timezone.now() - datetime.timedelta(days=2000)
+    user_models = Model.objects.annotate(last_record=Max('modelprogress__datetime', default=olddate))\
         .filter(user__username=username)\
         .order_by('-last_record', 'buy_date', 'created')
     if form.is_valid():
