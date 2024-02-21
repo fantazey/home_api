@@ -436,9 +436,12 @@ def run_telebot():
     application.add_handler(CommandHandler('start', start_command))
     application.add_handler(MessageHandler(filters.PHOTO, upload_photo))
     application.add_handler(CallbackQueryHandler(keyboard_handler))
-    application.add_handler(MessageHandler(filters.Regex("^\d+(ч|м).*"), progress_command))
+    application.add_handler(MessageHandler(filters.Regex("^\d+ч.*"), progress_command))
+    application.add_handler(MessageHandler(filters.Regex("^\d+м.*"), progress_command))
     application.add_handler(MessageHandler(filters.Regex("^купил .*"), add_model_handler))
+    application.add_handler(MessageHandler(filters.Regex("^Купил .*"), add_model_handler))
     application.add_handler(MessageHandler(filters.Regex("^хочу .*"), want_model_handler))
+    application.add_handler(MessageHandler(filters.Regex("^Хочу .*"), want_model_handler))
     application.add_error_handler(error_handler)
 
     application.run_polling()

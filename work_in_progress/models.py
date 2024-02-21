@@ -1,10 +1,26 @@
 import datetime
 from os import path
 
-from django.db import models
 from django.contrib.auth.models import User
+from django.core.validators import MinValueValidator
+from django.db import models
 
 from home_api.settings import DEBUG
+
+
+"""
+модуль кт:
+1) список юнитов + оружие к ним + парсинг правил, у каждого юнита имя + профессия, в боте список оперативников из тимы, по выбору оперативника его характеристики, отдельная кнопка на аппендикс со спец правилами оружия
+2) список уловок тактических - распарсить
+3) список уловок стратегических - распарсить
+4) шедулер на обновление данных батл скрайба из экселя и хранение этих данных в базе
+
+
+модуль инвентаря:
+1) краски - виш лист/инвентори: бренд, цвет, количество, ссылка, аналоги
+2) инструменты виш лист/инвентори: бренд, название, ссылка
+3) химия - виш лист/инвентори: бренд,  название, ссылка
+"""
 
 
 class BSCategory(models.Model):
@@ -15,8 +31,8 @@ class BSCategory(models.Model):
     source = models.CharField(verbose_name="Источник", max_length=500)
 
     class Meta:
-        verbose_name = 'Категория BattleScribe'
-        verbose_name_plural = 'Категории BattleScribe'
+        verbose_name = "Категория BattleScribe"
+        verbose_name_plural = "Категории BattleScribe"
 
     def __str__(self):
         return "%s(%s)" % (self.name, self.source)
@@ -33,8 +49,8 @@ class BSUnit(models.Model):
     bs_category = models.ForeignKey(BSCategory, on_delete=models.RESTRICT, verbose_name="Тип", null=True)
 
     class Meta:
-        verbose_name = 'Юнит BattleScribe'
-        verbose_name_plural = 'Юниты BattleScribe'
+        verbose_name = "Юнит BattleScribe"
+        verbose_name_plural = "Юниты BattleScribe"
 
     def __str__(self):
         return "%s (%s)" % (self.name, self.bs_category.name)
@@ -68,16 +84,21 @@ class Model(models.Model):
 
     name = models.CharField(verbose_name="Название модели", max_length=500)
     battlescribe_unit = models.ForeignKey(BSUnit, verbose_name="Из каталога BS", on_delete=models.RESTRICT, null=True)
+    kill_team = models.ForeignKey('KillTeam', verbose_name="KillTeam каталога BS", on_delete=models.RESTRICT, null=True)
     status = models.CharField(verbose_name="Статус", max_length=200, choices=Status.choices, default=Status.WISHED)
     user = models.ForeignKey(User, verbose_name="Пользователь", on_delete=models.RESTRICT)
     buy_date = models.DateField(verbose_name="Дата покупки", null=True)
-    created = models.DateTimeField(verbose_name="Дата создания", auto_now_add=True, null=False, blank=False)
-    updated = models.DateTimeField(verbose_name="Дата обновления", auto_now=True, null=False, blank=False)
+    created = models.DateTimeField(verbose_name="Дата создания", auto_now_add=True)
+    updated = models.DateTimeField(verbose_name="Дата обновления", auto_now=True)
     hidden = models.BooleanField(verbose_name="Скрыто", default=False)
+    unit_count = models.IntegerField(verbose_name="Количество миниатюр", default=1, null=True, blank=True,
+                                     validators=[MinValueValidator(limit_value=1)])
+    terrain = models.BooleanField(verbose_name="Террейн", default=False)
 
     class Meta:
-        verbose_name = 'Модель в работе'
-        verbose_name_plural = 'Модели в работе'
+        ordering = ["name"]
+        verbose_name = "Модель в работе"
+        verbose_name_plural = "Модели в работе"
 
     def __str__(self):
         return "%s - %s" % (self.name, self.get_status_display())
@@ -161,17 +182,17 @@ class Model(models.Model):
     def get_days_since_buy(self):
         if self.buy_date:
             return (datetime.datetime.now().date() - self.buy_date).days
-        return 'хз скока'
+        return "хз скока"
 
     @property
     def get_hours_spent(self):
-        return self.modelprogress_set.aggregate(models.Sum('time'))['time__sum'] or 0
+        return self.modelprogress_set.aggregate(models.Sum("time"))["time__sum"] or 0
 
     @property
     def get_last_image(self):
         if not self.modelimage_set.exists():
             return None
-        image = self.modelimage_set.order_by('-id').first().image
+        image = self.modelimage_set.order_by("-id").first().image
         if DEBUG and not path.exists(image.path):
             return None
         return image
@@ -186,8 +207,8 @@ class Model(models.Model):
     def get_last_image_preview_size(self):
         ratio = self.get_last_image.width / self.get_last_image.height
         return {
-            'width': 100,
-            'height': 100 / ratio
+            "width": 100,
+            "height": 100 / ratio
         }
 
 
@@ -199,12 +220,13 @@ class ModelProgress(models.Model):
     description = models.TextField(verbose_name="Подробности выполнененной работы")
     datetime = models.DateTimeField(verbose_name="Дата записи")
     time = models.FloatField(verbose_name="Затраченое время в часах", default=0.0)
-    model = models.ForeignKey(Model, on_delete=models.RESTRICT, verbose_name="Прогресс")
+    model = models.ForeignKey(Model, on_delete=models.RESTRICT, verbose_name="Прогресс", related_name="progress")
     status = models.CharField(verbose_name="Статус", max_length=200, choices=Model.Status.choices, null=True)
 
     class Meta:
-        verbose_name = 'Работа над моделью'
-        verbose_name_plural = 'Работы над моделью'
+        ordering = ["datetime"]
+        verbose_name = "Работа над моделью"
+        verbose_name_plural = "Работы над моделью"
 
     def __str__(self):
         return "%s - %s - %s - %s" % (self.model.name, self.title, self.time, self.datetime)
@@ -219,16 +241,96 @@ class ModelProgress(models.Model):
 
 
 def model_image_path(instance: 'ModelImage', filename: str):
-    return 'wip/%s/%s/%s' % (instance.model.user.username, instance.model.name, filename)
+    return "wip/%s/%s/%s" % (instance.model.user.username, instance.model.name, filename)
 
 
 class ModelImage(models.Model):
     image = models.ImageField(verbose_name="Фоточька", upload_to=model_image_path)
     progress = models.ForeignKey(ModelProgress, verbose_name="Процесс покраса", null=True, on_delete=models.RESTRICT)
     model = models.ForeignKey(Model, verbose_name="Модель", on_delete=models.RESTRICT)
-    created = models.DateTimeField(verbose_name="Дата создания", auto_now_add=True, null=False, blank=False)
+    created = models.DateTimeField(verbose_name="Дата создания", auto_now_add=True)
+
+    def __str__(self):
+        return "%s %s" % (self.model.name, self.created.strftime("%y-%m-%d %H:%M:%S"))
+
+    class Meta:
+        verbose_name = "Изображение модели"
+        verbose_name_plural = "Изображения модели"
 
 
 class Artist(models.Model):
     user = models.OneToOneField(User, verbose_name="Пользователь", on_delete=models.RESTRICT)
     telegram_name = models.CharField(verbose_name="Ник в телеге", max_length=200, unique=True)
+
+    class Meta:
+        verbose_name = "Красильщик"
+        verbose_name_plural = "Красильщики"
+
+    def __str__(self):
+        return self.user.username
+
+
+class PaintVendor(models.Model):
+    name = models.CharField(verbose_name="Производитель", max_length=300)
+
+    class Meta:
+        verbose_name = "Вендор краски"
+        verbose_name_plural = "Вендоры красок"
+
+    def __str__(self):
+        return self.name
+
+
+class Paint(models.Model):
+    vendor = models.ForeignKey(PaintVendor, verbose_name="Производитель краски", on_delete=models.PROTECT)
+    name = models.CharField(verbose_name="Название краски", max_length=300)
+    type = models.CharField(verbose_name="Тип краски", max_length=300, null=True, blank=True)
+    details = models.CharField(verbose_name="Доп инфо", max_length=600, null=True, blank=True)
+    color = models.CharField(verbose_name="Шеснадцатеричное RGB представление цвета", max_length=25, null=True,
+                             blank=True)
+
+    def __str__(self):
+        return "%s %s - %s" % (self.vendor, self.type, self.name)
+
+    class Meta:
+        ordering = ["vendor__name", "type", "name"]
+        verbose_name = "Краска"
+        verbose_name_plural = "Краски"
+
+
+class PaintInventory(models.Model):
+    user = models.OneToOneField(User, verbose_name="Пользователь", on_delete=models.RESTRICT)
+    paint = models.ForeignKey(Paint, verbose_name="Краска", on_delete=models.RESTRICT)
+    wish = models.BooleanField(verbose_name="Нужна", default=False)
+    has = models.BooleanField(verbose_name="Есть", default=False)
+
+    def __str__(self):
+        return self.paint
+
+    class Meta:
+        ordering = ["user", "has"]
+        verbose_name = "Запас красок"
+        verbose_name_plural = "Запасы красок"
+
+
+class KillTeam(models.Model):
+    name = models.CharField(verbose_name="Название", max_length=500)
+
+    class Meta:
+        verbose_name = "Истребительная команда"
+        verbose_name_plural = "Истребительная команда"
+
+    def __str__(self):
+        return self.name
+
+
+class KillTeamOperative(models.Model):
+    kill_team = models.ForeignKey(KillTeam, verbose_name="Команда", on_delete=models.RESTRICT)
+    name = models.CharField(verbose_name="Название", max_length=500)
+
+    class Meta:
+        verbose_name = "Оперативник"
+        verbose_name_plural = "Оперативники"
+
+    def __str__(self):
+        return self.name

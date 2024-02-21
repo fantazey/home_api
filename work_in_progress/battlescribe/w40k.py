@@ -4,7 +4,7 @@ from os import path
 from bs4 import BeautifulSoup
 from work_in_progress.models import BSUnit, BSCategory
 
-SOURCE_PATH = path.join(path.dirname(path.abspath(__file__)), 'fixtures')
+SOURCE_PATH = path.join(path.dirname(path.abspath(__file__)), 'fixtures', '40k')
 
 
 def main():
@@ -14,8 +14,9 @@ def main():
     """
     for root, dirs, files in walk(SOURCE_PATH):
         for file in files:
-            print('read:', file)
-            read_fixture_file(path.join(root, file))
+            if file.endswith(".cat"):
+                print('read:', file)
+                read_fixture_file(path.join(root, file))
 
 
 def read_fixture_file(source):
@@ -35,7 +36,11 @@ def read_fixture_file(source):
     units_entries = soup.find_all('selectionEntry', {'type': 'unit'})
     category_name = soup.find('catalogue').attrs['name']
     print("read catalog for:", category_name)
-    category, created = BSCategory.objects.get_or_create(name=category_name, source=source)
+    category, created = BSCategory.objects.get_or_create(name=category_name)
+    if created:
+        category.source = source
+        category.save()
+
     print("category: ", category, " created:", created)
     for entry in units_entries:
         name = entry.attrs['name']

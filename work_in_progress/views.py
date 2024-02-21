@@ -218,6 +218,8 @@ def delete_model(request, model_id):
     model = Model.objects.get(id=model_id, user=request.user)
     model_progress = ModelProgress.objects.filter(model=model)
     model_progress.delete()
+    model_images = ModelImage.objects.filter(model=model)
+    model_images.delete()
     model.delete()
     return redirect(reverse('wip:models', kwargs={'username': request.user.username}))
 
