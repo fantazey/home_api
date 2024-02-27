@@ -50,8 +50,11 @@ MAIN_KBD_LAYOUT = [
 
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await get_user(update.effective_chat.username)
-    reply_markup = InlineKeyboardMarkup(MAIN_KBD_LAYOUT)
+    user = await get_user(update.effective_chat.username)
+    kbd = MAIN_KBD_LAYOUT
+    if user.username == 'andy':
+        kbd.append([InlineKeyboardButton("Ангар", callback_data="hangar")])
+    reply_markup = InlineKeyboardMarkup(kbd)
     if update.message:
         await update.message.reply_text("Доступные действия", reply_markup=reply_markup)
         return
@@ -108,6 +111,10 @@ async def keyboard_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(chat_id=chat_id, text=text, parse_mode=PARSE_MODE)
         return
 
+    if "hangar" == query.data:
+        await handle_hangar_actions(update, context)
+        return
+
     if "change_status" == query.data:
         await handler_change_status(update, context)
         return
@@ -158,6 +165,13 @@ async def handle_list_models_paged(page: int, update: Update, context: ContextTy
                                         message_id=update.callback_query.message.message_id,
                                         text=f"Модели на странице {page + 1}",
                                         reply_markup=reply_markup)
+
+
+async def handle_hangar_actions(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = await get_user(update.effective_chat.username)
+    if user.username != 'andy':
+        return
+#     todo
 
 
 async def handle_model_actions(update: Update, context: ContextTypes.DEFAULT_TYPE):
