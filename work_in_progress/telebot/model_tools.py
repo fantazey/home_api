@@ -58,7 +58,7 @@ def get_user_models_paged(user: User, page: int) -> list[dict]:
     slice_end = (page + 1) * 5
     olddate = timezone.now() - datetime.timedelta(days=2000)
     models = Model.objects.filter(user=user)\
-        .annotate(max_date=Max('modelprogress__datetime', default=olddate))\
+        .annotate(max_date=Max('progress__datetime', default=olddate))\
         .order_by('-max_date')[slice_start:slice_end]
     result = []
     for model in models:

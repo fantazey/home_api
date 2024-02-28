@@ -62,7 +62,7 @@ async def hangar_light(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    return error_handler(update, context)
+    return await error_handler(update, context)
 
 
 def run_telebot():
@@ -70,11 +70,12 @@ def run_telebot():
     application.add_handler(CommandHandler('start', start))
     application.add_handler(MessageHandler(filters.PHOTO, upload_photo))
 
-    progress_pattern = re.compile(r"^progress_.*$")
+    progress_pattern = re.compile(r"^progress.*$")
     application.add_handler(CallbackQueryHandler(progress_keyboard, pattern=progress_pattern))
 
-    model_pattern = re.compile(r"^model_.*$")
+    model_pattern = re.compile(r"^model.*$")
     application.add_handler(CallbackQueryHandler(model_keyboard, pattern=model_pattern))
+
     application.add_handler(CallbackQueryHandler(keyboard))
 
     time_pattern = re.compile(r"^(\d+\.?\d*ч)|(\d+\.?\d*ч).*", flags=re.IGNORECASE)

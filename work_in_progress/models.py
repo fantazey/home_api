@@ -186,7 +186,7 @@ class Model(models.Model):
 
     @property
     def get_hours_spent(self):
-        return self.modelprogress_set.aggregate(models.Sum("time"))["time__sum"] or 0
+        return self.progress.aggregate(models.Sum("time"))["time__sum"] or 0
 
     @property
     def get_last_image(self):

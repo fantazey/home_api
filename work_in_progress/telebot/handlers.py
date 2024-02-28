@@ -8,16 +8,17 @@ import traceback
 from django.contrib.auth.models import User
 from django.core.files.images import ImageFile
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 
 from .model_tools import get_user, update_model_status, get_model, get_user_models_paged, record_model_progress, \
     save_image_to_progress, create_model, want_model, delete_model, get_last_model_progress, delete_progress
 from work_in_progress.models import Model
 from work_in_progress.templatetags.wip_filters import duration
-from hangar import set_light_value
+from .hangar import set_light_value
 
 
-PARSE_MODE = 'MarkdownV2'
+PARSE_MODE = ParseMode.MARKDOWN_V2
 
 
 def require_user(func):
@@ -81,11 +82,13 @@ async def model_keyboard_handler(update: Update, context: ContextTypes.DEFAULT_T
     if query.data.startswith("model_view_"):
         context.user_data['model_id'] = int(query.data.replace("model_view_", ""))
         return await handler_model_menu(update, context)
-
     if "model" == query.data:
+        if 'model_id' not in context.user_data or context.user_data['model_id'] is None:
+            text = "Текущая модель не выбрана\. Выбери модель из списка"
+            await context.bot.send_message(chat_id=chat_id, text=text, parse_mode=PARSE_MODE)
+            return
         await handler_model_menu(update, context)
         return
-
     if "model_add" == query.data:
         text = "Чтобы добавить купленную модель отправь сообщение \"купил [название модели]\" или " \
                "\"хочу [название модели]\" чтобы добавить ее в вишлист"
@@ -117,22 +120,25 @@ async def progress_keyboard_handler(update: Update, context: ContextTypes.DEFAUL
     query = update.callback_query
     chat_id = update.effective_chat.id
     await query.answer()
+    print("progress handler")
     if "progress_add" == query.data:
         if 'model_id' not in context.user_data or context.user_data['model_id'] is None:
-            text = "Текущая модель не выбрана. Выбери модель из списка"
-            await context.bot.send_message(chat_id=chat_id, text=''.join(text), parse_mode=PARSE_MODE)
+            text = "Текущая модель не выбрана\. Выбери модель из списка"
+            await context.bot.send_message(chat_id=chat_id, text=text, parse_mode=PARSE_MODE)
             return
         model = await get_model(user, context.user_data['model_id'])
         text = f"Чтобы записать время для _{model['name']}_ отправь сообщение \"время [описание]\" " \
                f"например *1ч15м красил пушку*"
-        await context.bot.send_message(chat_id=chat_id, text=''.join(text), parse_mode=PARSE_MODE)
+        await context.bot.send_message(chat_id=chat_id, text=text, parse_mode=PARSE_MODE)
         return
 
     if "progress_delete_last_menu" == query.data:
+        print("progress delete menu")
         await handler_progress_delete_last_menu(update, context)
         return
 
     if "progress_delete_last" == query.data:
+        print("progress delete")
         await handler_progress_delete_last(update, context)
         return
 
@@ -144,6 +150,7 @@ async def keyboard_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, u
     query = update.callback_query
     chat_id = update.effective_chat.id
     await query.answer()
+    print("default handler")
     if "image_add" == query.data:
         if 'model_id' not in context.user_data or context.user_data['model_id'] is None:
             text = "Текущая модель не выбрана. Выбери модель из списка"
@@ -159,6 +166,7 @@ async def keyboard_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, u
 @require_user
 async def handler_list_models_paged(update: Update, context: ContextTypes.DEFAULT_TYPE, user: User = None):
     page = context.user_data['model_page'] if 'model_page' in context.user_data else 0
+    print(page)
     models = await get_user_models_paged(user, page)
     keyboard = []
     for model in models:
@@ -179,7 +187,7 @@ async def handler_list_models_paged(update: Update, context: ContextTypes.DEFAUL
 
 
 @require_model
-async def handler_model_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, model: dict = None):
+async def handler_model_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, model: dict = None, **kwargs):
     prev_page = context.user_data['model_page'] if 'model_page' in context.user_data else 0
     keyboard = [
         [InlineKeyboardButton("Записать время", callback_data="progress_add")],
@@ -193,13 +201,13 @@ async def handler_model_menu(update: Update, context: ContextTypes.DEFAULT_TYPE,
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     text = f"Операции для {model['name']}, в статусе: '{model['status']}', затрачено времени: ({model['duration']})"
-    if update.callback_query is None:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=text, reply_markup=reply_markup)
-        return
-    await context.bot.edit_message_text(chat_id=update.effective_chat.id,
-                                        message_id=update.callback_query.message.message_id,
-                                        text=text,
-                                        reply_markup=reply_markup)
+    # if update.callback_query is None:
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=text, reply_markup=reply_markup)
+    return
+    # await context.bot.edit_message_text(chat_id=update.effective_chat.id,
+    #                                     message_id=update.callback_query.message.message_id,
+    #                                     text=text,
+    #                                     reply_markup=reply_markup)
 
 
 async def handler_model_change_status_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -337,19 +345,12 @@ async def handler_model_want(update: Update, context: ContextTypes.DEFAULT_TYPE,
 
 
 async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print(context.error)
     tb_list = traceback.format_exception(None, context.error, context.error.__traceback__)
-    tb_string = "".join(tb_list)
-    update_str = update.to_dict() if isinstance(update, Update) else str(update)
-    message = html.escape(
-        "An exception was raised while handling an update\n"
-        f"update = {json.dumps(update_str, indent=2, ensure_ascii=False)}"
-        "\n\n"
-        f"context.chat_data = {str(context.chat_data)}\n\n"
-        f"context.user_data = {str(context.user_data)}\n\n"
-        f"{tb_string}"
-    )
+    print(tb_list)
+    # todo handle errors
     await context.bot.send_message(
-        chat_id=update.effective_chat.id, text=message, parse_mode=PARSE_MODE
+        chat_id=update.effective_chat.id, text="ok", parse_mode=PARSE_MODE
     )
 
 
@@ -395,7 +396,7 @@ async def handler_progress_delete_last_menu(update: Update, context: ContextType
         [InlineKeyboardButton("Удалить запись времени", callback_data="progress_delete_last")],
         [InlineKeyboardButton("Назад", callback_data="model")],
     ]
-    record = get_last_model_progress(user, model['id'])
+    record = await get_last_model_progress(user, model['id'])
     context.user_data['progress_id'] = record['id']
     reply_markup = InlineKeyboardMarkup(keyboard)
     text = f"""Удалить запись времени {record['description']} {duration(record['time'])} от {record['datetime']}
