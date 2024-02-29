@@ -66,7 +66,7 @@ async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def run_telebot():
-    application = ApplicationBuilder().token(TEST_TOKEN).build()
+    application = ApplicationBuilder().token(TOKEN).build()
     application.add_handler(CommandHandler('start', start))
     application.add_handler(MessageHandler(filters.PHOTO, upload_photo))
 
@@ -78,7 +78,7 @@ def run_telebot():
 
     application.add_handler(CallbackQueryHandler(keyboard))
 
-    time_pattern = re.compile(r"^(\d+\.?\d*ч)|(\d+\.?\d*ч).*", flags=re.IGNORECASE)
+    time_pattern = re.compile(r"^(\d+\.?\d*ч)|(\d+\.?\d*м).*", flags=re.IGNORECASE)
     application.add_handler(MessageHandler(filters.Regex(time_pattern), progress))
 
     buy_pattern = re.compile(r"^купил .*", flags=re.IGNORECASE)

@@ -1,9 +1,6 @@
 from functools import wraps
-import html
 import io
-import json
 import re
-import traceback
 
 from django.contrib.auth.models import User
 from django.core.files.images import ImageFile
@@ -62,7 +59,6 @@ MAIN_KBD_LAYOUT = [
 
 @require_user
 async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, user: User = None):
-    print(user.username)
     reply_markup = InlineKeyboardMarkup(MAIN_KBD_LAYOUT)
     if update.message:
         await update.message.reply_text("Доступные действия", reply_markup=reply_markup)
@@ -90,8 +86,8 @@ async def model_keyboard_handler(update: Update, context: ContextTypes.DEFAULT_T
         await handler_model_menu(update, context)
         return
     if "model_add" == query.data:
-        text = "Чтобы добавить купленную модель отправь сообщение \"купил [название модели]\" или " \
-               "\"хочу [название модели]\" чтобы добавить ее в вишлист"
+        text = f"Чтобы добавить купленную модель отправь сообщение \"купил \[название модели\]\" или " \
+               "\"хочу \[название модели\]\" чтобы добавить ее в вишлист"
         await context.bot.send_message(chat_id=chat_id, text=text, parse_mode=PARSE_MODE)
         return
 
@@ -120,7 +116,6 @@ async def progress_keyboard_handler(update: Update, context: ContextTypes.DEFAUL
     query = update.callback_query
     chat_id = update.effective_chat.id
     await query.answer()
-    print("progress handler")
     if "progress_add" == query.data:
         if 'model_id' not in context.user_data or context.user_data['model_id'] is None:
             text = "Текущая модель не выбрана\. Выбери модель из списка"
@@ -133,12 +128,10 @@ async def progress_keyboard_handler(update: Update, context: ContextTypes.DEFAUL
         return
 
     if "progress_delete_last_menu" == query.data:
-        print("progress delete menu")
         await handler_progress_delete_last_menu(update, context)
         return
 
     if "progress_delete_last" == query.data:
-        print("progress delete")
         await handler_progress_delete_last(update, context)
         return
 
@@ -150,15 +143,14 @@ async def keyboard_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, u
     query = update.callback_query
     chat_id = update.effective_chat.id
     await query.answer()
-    print("default handler")
     if "image_add" == query.data:
         if 'model_id' not in context.user_data or context.user_data['model_id'] is None:
-            text = "Текущая модель не выбрана. Выбери модель из списка"
-            await context.bot.send_message(chat_id=chat_id, text=''.join(text), parse_mode=PARSE_MODE)
+            text = "Текущая модель не выбрана\. Выбери модель из списка"
+            await context.bot.send_message(chat_id=chat_id, text=text, parse_mode=PARSE_MODE)
             return
         model = await get_model(user, context.user_data['model_id'])
         text = f"Чтобы добавить картинку для _{model['name']}_ отправь фото"
-        await context.bot.send_message(chat_id=chat_id, text=''.join(text), parse_mode=PARSE_MODE)
+        await context.bot.send_message(chat_id=chat_id, text=text, parse_mode=PARSE_MODE)
         return
     await start_handler(update, context)
 
@@ -166,7 +158,6 @@ async def keyboard_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, u
 @require_user
 async def handler_list_models_paged(update: Update, context: ContextTypes.DEFAULT_TYPE, user: User = None):
     page = context.user_data['model_page'] if 'model_page' in context.user_data else 0
-    print(page)
     models = await get_user_models_paged(user, page)
     keyboard = []
     for model in models:
@@ -180,10 +171,8 @@ async def handler_list_models_paged(update: Update, context: ContextTypes.DEFAUL
     button_start = InlineKeyboardButton("^", callback_data="start")
     keyboard.append([button_back, button_start, button_forward])
     reply_markup = InlineKeyboardMarkup(keyboard)
-    await context.bot.edit_message_text(chat_id=update.effective_chat.id,
-                                        message_id=update.callback_query.message.message_id,
-                                        text=f"Модели на странице {page + 1}",
-                                        reply_markup=reply_markup)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Модели на странице {page + 1}",
+                                   reply_markup=reply_markup)
 
 
 @require_model
@@ -345,17 +334,14 @@ async def handler_model_want(update: Update, context: ContextTypes.DEFAULT_TYPE,
 
 
 async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print(context.error)
-    tb_list = traceback.format_exception(None, context.error, context.error.__traceback__)
-    print(tb_list)
-    # todo handle errors
+    # tb_list = traceback.format_exception(None, context.error, context.error.__traceback__)
     await context.bot.send_message(
-        chat_id=update.effective_chat.id, text="ok", parse_mode=PARSE_MODE
+        chat_id=update.effective_chat.id, text=context.error, parse_mode=PARSE_MODE
     )
 
 
 @require_admin
-async def handler_hangar_light(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def handler_hangar_light(update: Update, context: ContextTypes.DEFAULT_TYPE, **kwargs):
     p = re.compile(r"^свет\s+", flags=re.IGNORECASE)
     value = re.sub(p, "", update.message.text)
     set_light_value(int(value))
@@ -363,7 +349,8 @@ async def handler_hangar_light(update: Update, context: ContextTypes.DEFAULT_TYP
 
 
 @require_model
-async def handler_model_delete_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, model: dict = None):
+async def handler_model_delete_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, model: dict = None,
+                                    **kwargs):
     keyboard = [
         [InlineKeyboardButton("Удалить модель", callback_data="model_delete")],
         [InlineKeyboardButton("Назад", callback_data="model")],
@@ -384,7 +371,8 @@ async def handler_model_delete(update: Update, context: ContextTypes.DEFAULT_TYP
                                model: dict = None):
     await delete_model(user, model['id'])
     del context.user_data['model_id']
-    del context.user_data['progress_id']
+    if 'progress_id' in context.user_data:
+        del context.user_data['progress_id']
     await context.bot.send_message(chat_id=update.effective_chat.id, text="Модель удалена")
     await start_handler(update, context)
 
@@ -414,7 +402,7 @@ async def handler_progress_delete_last_menu(update: Update, context: ContextType
 async def handler_progress_delete_last(update: Update, context: ContextTypes.DEFAULT_TYPE, user: User = None):
     await delete_progress(user, context.user_data['model_id'], context.user_data['progress_id'])
     del context.user_data['progress_id']
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="Модель удалена")
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Запись времени удалена")
     await start_handler(update, context)
 
 
