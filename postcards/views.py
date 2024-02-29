@@ -5,7 +5,8 @@ from .forms import PostcardForm, LibraryAddForm
 
 
 def index(request):
-    return render(request, 'postcards/index.html', {'postcards': Postcard.objects.all().order_by('id')})
+
+    return render(request, 'postcards/index.html', {'postcards': Postcard.objects.all().order_by('date_receiving')})
 
 
 class PostcardCreateView(CreateView):

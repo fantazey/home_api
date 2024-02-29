@@ -4,7 +4,7 @@
 {% endblock header %}
 {% block content %}
     <a href="{% url 'postcards:add' %}">
-         <button class="small ui button secondary">Добавить открытку</button>
+         <button class="small ui button secondary">Добавить новую входящую открытку</button>
     </a>
     <a href="{% url 'postcards:library' %}">
             <button class="small ui button secondary">Открытки к отправке</button>
@@ -19,11 +19,12 @@
                  <img src="{{ postcard.image.url }}" style="max-height: 300px">
                 </div>
             {% endif %}
-        <div class="content">
-            <div class="description">Отправитель: {{ postcard.sender }}</div>
-        <div class="description">Страна: {{ postcard.country }}</div>
-        </div>
-            <div class="extra content">Дней в пути - {{ postcard.travel_time }}</div>
+            <div class="content">
+                <div class="description">Отправитель: {{ postcard.sender }}</div>
+                <div class="description">Страна: {{ postcard.country }}</div>
+            </div>
+            <div class="extra content">Дней в пути: {{ postcard.travel_time }}</div>
+            <div class="extra centent">Дата получения: {{ postcard.date_receiving }}</div>
             <div class="extra content">
                 <a href="{% url 'postcards:edit' postcard.id %}">
                     <i class="pencil alternate icon"></i>
@@ -34,4 +35,5 @@
             </div>
         </div>
     {% endfor %}
+</div>
 {% endblock content %}
