@@ -3,7 +3,7 @@ import os
 import bluetooth
 
 device_addr = "B7:7B:1A:07:21:AF"
-socket_path = "/tmp/hangar.sock"
+socket_path = "/tmp/homeapi/hangar.sock"
 
 
 def send_command(command):
