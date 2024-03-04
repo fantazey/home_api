@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
-from .models import Postcard, Library
+from .models import Postcard, Library, Address
 from django.views.generic.edit import CreateView
-from .forms import PostcardForm, LibraryAddForm
+from .forms import PostcardForm, LibraryAddForm, AddressAddForm
 
 
 def index(request):
@@ -75,3 +75,26 @@ def library_add(request):
             l.save()
             return redirect('postcards:library')
         return render(request, 'postcards/library/add.html', {'form': form})
+
+
+def add_address(request, id):
+    if request.method == 'GET':
+        p = Library.objects.get(id=id)
+        form = AddressAddForm()
+        return render(request, 'postcards/address.html', {'form': form, 'postcard': p})
+    if request.method == 'POST':
+        form = AddressAddForm(request.POST)
+        lp = Library.objects.get(id=id)
+        if form.is_valid():
+            address = Address()
+            address.name = form.cleaned_data['name']
+            address.address = form.cleaned_data['address']
+            address.postcode = form.cleaned_data['postcode']
+            address.postcard_id = lp.id
+            address.save()
+
+            lp.is_reserved = True
+            lp.save()
+
+            return redirect('postcards:library')
+    return render(request, 'postcards/address.html', {'form': None, 'postcard': None})

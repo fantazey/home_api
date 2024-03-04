@@ -24,8 +24,7 @@ class LibraryAddForm(Form):
     image = ImageField(label='фотка')
 
 
-class AddressAddForm(ModelForm):
-    image = ImageField(label='желаемая открытка')
+class AddressAddForm(Form):
     name = CharField(max_length="70", label='имя получателя')
-    city = CharField(max_length="30", label='город получателя')
-    address = CharField(max_length="70", label='адерс с индексом')
+    postcode = CharField(max_length="30", label='postcode')
+    address = CharField(max_length="70", label='адрес')

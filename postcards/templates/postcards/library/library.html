@@ -11,7 +11,6 @@
     <a href="{% url 'postcards:library_add' %}">
         <button class="small ui button secondary">Добавить новую открытку</button>
     </a>
-
     <div class="ui grid container aligned center">
 
         {% for postcard in postcards %}
@@ -22,11 +21,18 @@
                         <img src="{{ postcard.image.url }}" style="max-height: 300px">
                     </div>
                 {% endif %}
+            {% if not postcard.is_reserved %}
+                <a href="{% url 'postcards:address_recipient' postcard.id %}">
+                    <button class="small ui button secondary">Адрес</button>
+                </a>
+            {% endif %}
 
-                <div class="extra content">
+            <div class="extra content">
+                {% if not postcard.is_reserved %}
                     <a href="{% url 'postcards:library_delete' postcard.id %}">
                         <i class="trash alternate icon"></i>
                     </a>
+                {% endif %}
                 </div>
             </div>
         {% endfor %}

@@ -24,7 +24,18 @@ class Postcard(models.Model):
 
 class Library(models.Model):
     image = models.ImageField(upload_to='library', verbose_name='картинка')
+    is_reserved = models.BooleanField(default=False)
+    is_sent = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = 'Открытка для отправления'
         verbose_name_plural = 'Открытки для отправления'
+
+
+class Address(models.Model):
+    postcard = models.OneToOneField(Library, on_delete=models.RESTRICT)
+    name = models.CharField(max_length=50, verbose_name='ФИО получателя')
+    address = models.CharField(max_length=70, verbose_name='адрес получутеля')
+    postcode = models.CharField(max_length=8, verbose_name='индекс')
+
+

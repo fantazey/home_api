@@ -13,4 +13,5 @@ urlpatterns = [
     path('library', views.library, name='library'),
     path('library/add', views.library_add, name='library_add'),
     path('library/<int:id>/delete', views.library_delete, name='library_delete'),
+    path('address/<int:id>/add', views.add_address, name='address_recipient'),
 ]
