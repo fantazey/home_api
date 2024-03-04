@@ -13,7 +13,7 @@ import re
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters, CallbackQueryHandler
 
-from home_api.private_settings import TOKEN, TEST_TOKEN, DEBUG
+from home_api.private_settings import TOKEN
 from .handlers import start_handler, keyboard_handler, handler_progress_add, handler_image_add, \
     handler_model_buy, handler_model_want, error_handler, handler_hangar_light, model_keyboard_handler, \
     progress_keyboard_handler

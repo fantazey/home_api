@@ -1,6 +1,7 @@
 import socket
 import os
 import bluetooth
+import time
 
 device_addr = "B7:7B:1A:07:21:AF"
 socket_path = "/tmp/homeapi/hangar.sock"
@@ -11,8 +12,10 @@ def send_command(command):
     port = 1
     print("Connecting to hangar")
     sock.connect((device_addr, port))
+    time.sleep(2)
     print("Send command:", command)
     sock.send('@' + command + '#')
+    time.sleep(1)
     print("Close hangar connection")
     sock.close()
 

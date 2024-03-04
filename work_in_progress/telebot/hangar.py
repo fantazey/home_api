@@ -64,6 +64,10 @@ def set_light_off():
     _set_light_mode(L_OFF)
 
 
+def set_light_fade():
+    _set_light_mode(L_FADE)
+
+
 def set_light_value(value: int):
     if value == 0:
         set_light_off()
