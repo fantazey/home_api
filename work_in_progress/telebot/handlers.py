@@ -13,7 +13,8 @@ from .model_tools import get_user, update_model_status, get_model, get_user_mode
 from work_in_progress.models import Model
 from work_in_progress.templatetags.wip_filters import duration
 from .hangar import set_light_value, set_light_full, set_light_low, set_light_mid, set_light_off, set_light_fade, \
-    set_painted_count, set_unpainted_count, display_show_all, display_show_painted, display_show_unpainted, sync_time
+    set_painted_count, set_unpainted_count, display_show_all, display_show_painted, display_show_unpainted, sync_time, \
+    display_show_time, display_show_date, set_light_fixed
 
 
 PARSE_MODE = ParseMode.MARKDOWN_V2
@@ -50,9 +51,24 @@ ADMIN_MAIN_KBD_LAYOUT = [
 HANGAR_MAIN_KBD_LAYOUT = [
     [InlineKeyboardButton("Дисплей", callback_data="hangar_display_menu")],
     [InlineKeyboardButton("Свет", callback_data="hangar_light_menu")],
-    [InlineKeyboardButton("Обновить время", callback_data="hangar_set_time")],
-    [InlineKeyboardButton("Установить количество непокраса", callback_data="hangar_set_unpainted")],
-    [InlineKeyboardButton("Установить количество покраса", callback_data="hangar_set_painted")],
+    [InlineKeyboardButton("Обновить время", callback_data="hangar_set_time")]
+]
+
+HANGAR_DISPLAY_KBD_LAYOUT = [
+    [InlineKeyboardButton("Сброс", callback_data="hangar_display_mode_reset")],
+    [InlineKeyboardButton("Дата", callback_data="hangar_display_mode_date")],
+    [InlineKeyboardButton("Время", callback_data="hangar_display_mode_time")],
+    [InlineKeyboardButton("Покрас", callback_data="hangar_display_mode_painted")],
+    [InlineKeyboardButton("Непокрас", callback_data="hangar_display_mode_unpainted")]
+]
+
+HANGAR_LIGHT_KBD_LAYOUT = [
+    [InlineKeyboardButton("Выключить", callback_data="hangar_light_mode_off")],
+    [InlineKeyboardButton("Мигающий", callback_data="hangar_light_mode_fade")],
+    [InlineKeyboardButton("Фиксированный", callback_data="hangar_light_mode_fixed")],
+    [InlineKeyboardButton("Низкий", callback_data="hangar_light_mode_low")],
+    [InlineKeyboardButton("Средний", callback_data="hangar_light_mode_mid")],
+    [InlineKeyboardButton("Полный", callback_data="hangar_light_mode_high")]
 ]
 
 
@@ -97,15 +113,8 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, **kw
         kbd = MAIN_KBD_LAYOUT
     reply_markup = InlineKeyboardMarkup(kbd)
     text = "\n\n".join(RULES)
-    if can_edit_message(update, reply_markup):
-        await context.bot.edit_message_text(chat_id=update.effective_chat.id,
-                                            message_id=update.callback_query.message.message_id,
-                                            text=text,
-                                            reply_markup=reply_markup)
-        return
-
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=text,
-                                   reply_markup=reply_markup)
+    await send_markup(update, context, reply_markup, text)
+    return
 
 
 async def model_keyboard_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -189,17 +198,8 @@ async def handler_list_models_paged(update: Update, context: ContextTypes.DEFAUL
     button_start = InlineKeyboardButton("^", callback_data="start")
     keyboard.append([button_back, button_start, button_forward])
     reply_markup = InlineKeyboardMarkup(keyboard)
-    if can_edit_message(update, reply_markup):
-        await context.bot.edit_message_text(chat_id=update.effective_chat.id,
-                                            message_id=update.callback_query.message.message_id,
-                                            text=f"Модели на странице {page + 1}",
-                                            reply_markup=reply_markup)
-        return
-
-    if update.callback_query.message.reply_markup == reply_markup:
-        return
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Модели на странице {page + 1}",
-                                   reply_markup=reply_markup)
+    text = f"Модели на странице {page + 1}"
+    await send_markup(update, context, reply_markup, text)
     return
 
 
@@ -216,15 +216,8 @@ async def handler_model_menu(update: Update, context: ContextTypes.DEFAULT_TYPE,
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     text = f"Операции для {model['name']}, в статусе: '{model['status']}', затрачено времени: ({model['duration']})"
-    if can_edit_message(update, reply_markup):
-        await context.bot.edit_message_text(chat_id=update.effective_chat.id,
-                                            message_id=update.callback_query.message.message_id,
-                                            text=text,
-                                            reply_markup=reply_markup)
-        return
-    if reply_markup == update.callback_query.message.reply_markup:
-        return
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=text, reply_markup=reply_markup)
+    await send_markup(update, context, reply_markup, text)
+    return
 
 
 async def handler_model_change_status_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -234,14 +227,8 @@ async def handler_model_change_status_menu(update: Update, context: ContextTypes
     keyboard.append([InlineKeyboardButton('^', callback_data=f"model")])
     reply_markup = InlineKeyboardMarkup(keyboard)
     text = "Выбери статус"
-    if can_edit_message(update, reply_markup):
-        await context.bot.edit_message_text(chat_id=update.effective_chat.id,
-                                            message_id=update.callback_query.message.message_id,
-                                            text=text,
-                                            reply_markup=InlineKeyboardMarkup(keyboard))
-    if reply_markup == update.callback_query.message.reply_markup:
-        return
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=text, reply_markup=reply_markup)
+    await send_markup(update, context, reply_markup, text)
+    return
 
 
 @require_user
@@ -267,10 +254,12 @@ async def handler_progress_add(update: Update, context: ContextTypes.DEFAULT_TYP
     :return:
     """
     track_time = calc_time(update.message.text)
+    print("Track time {}".format(track_time))
     if track_time == 0:
         await handler_model_menu(update, context)
         return
     description = " ".join(update.message.text.split(" ")[1:])
+    print("Track description \"{}\"".format(description))
     message = ["Записал время *%s* для модели _%s \- %s_" % (duration(track_time), model['id'], model['name'])]
     if len(description) > 0:
         message.append("C пояснением: _%s_" % description)
@@ -284,19 +273,23 @@ async def handler_progress_add(update: Update, context: ContextTypes.DEFAULT_TYP
 
 
 def calc_time(data: str):
-    track_time = 0
     time_data = data.split(" ")[0]
+    print("Time data {}".format(time_data))
     hours = 0
+    minutes = 0
     if 'ч' in time_data:
         hours = int(time_data.split('ч')[0])
+        print("Read hours {}".format(hours))
         time_data = "".join(time_data.split('ч')[1:])
+        print("Left time data {}".format(time_data))
     if 'м' in time_data:
         minutes = int(time_data.split('м')[0])
+        print("Read minuted {}".format(minutes))
         if minutes > 60:
             hours += minutes // 60
             minutes = minutes % 60
 
-        track_time = float(hours) + (float(minutes) / 60)
+    track_time = float(hours) + (float(minutes) / 60)
     return track_time
 
 
@@ -347,6 +340,7 @@ async def handler_model_buy(update: Update, context: ContextTypes.DEFAULT_TYPE, 
     p = re.compile(r"купил ", flags=re.IGNORECASE)
     model_name = re.sub(p, "", update.message.text)
     model_id = await create_model(user, model_name)
+    print("Save model {}".format(model_id))
     await context.bot.send_message(chat_id=update.effective_chat.id, text="Модель сохранена")
     context.user_data["model_id"] = model_id
     await handler_model_menu(update, context)
@@ -371,13 +365,8 @@ async def handler_model_delete_menu(update: Update, context: ContextTypes.DEFAUL
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     text = f"""Удалить модель {model['name']}, все записи времени и все фотографии?"""
-    if can_edit_message(update, reply_markup):
-        await context.bot.edit_message_text(chat_id=update.effective_chat.id,
-                                            message_id=update.callback_query.message.message_id,
-                                            text=text,
-                                            reply_markup=reply_markup)
-        return
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=text, reply_markup=reply_markup)
+    await send_markup(update, context, reply_markup, text)
+    return
 
 
 @require_model
@@ -388,7 +377,7 @@ async def handler_model_delete(update: Update, context: ContextTypes.DEFAULT_TYP
     if 'progress_id' in context.user_data:
         del context.user_data['progress_id']
     await context.bot.send_message(chat_id=update.effective_chat.id, text="Модель удалена")
-    await start_handler(update, context)
+    return await start_handler(update, context)
 
 
 @require_model
@@ -399,17 +388,14 @@ async def handler_progress_delete_last_menu(update: Update, context: ContextType
         [InlineKeyboardButton("Назад", callback_data="model")],
     ]
     record = await get_last_model_progress(user, model['id'])
+    if 'id' not in record:
+        return
     context.user_data['progress_id'] = record['id']
     reply_markup = InlineKeyboardMarkup(keyboard)
     text = f"""Удалить запись времени {record['description']} {duration(record['time'])} от {record['datetime']}
  и связанные фотографии?"""
-    if can_edit_message(update, reply_markup):
-        await context.bot.edit_message_text(chat_id=update.effective_chat.id,
-                                            message_id=update.callback_query.message.message_id,
-                                            text=text,
-                                            reply_markup=reply_markup)
-        return
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=text, reply_markup=reply_markup)
+    await send_markup(update, context, reply_markup, text)
+    return
 
 
 @require_user
@@ -436,20 +422,33 @@ async def handler_hangar_light(update: Update, context: ContextTypes.DEFAULT_TYP
 
 
 @require_admin
+async def handler_hangar_painted(update: Update, context: ContextTypes.DEFAULT_TYPE, **kwargs):
+    p = re.compile(r"^покрас\s+", flags=re.IGNORECASE)
+    value = re.sub(p, "", update.message.text)
+    set_painted_count(int(value))
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Команда отправлена")
+
+
+@require_admin
+async def handler_hangar_unpainted(update: Update, context: ContextTypes.DEFAULT_TYPE, **kwargs):
+    p = re.compile(r"^непокрас\s+", flags=re.IGNORECASE)
+    value = re.sub(p, "", update.message.text)
+    set_unpainted_count(int(value))
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Команда отправлена")
+
+
+@require_admin
 async def hangar_keyboard_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, **kwargs):
     query = update.callback_query
-    chat_id = update.effective_chat.id
     await query.answer()
     if "hangar_set_time" == query.data:
         return await handler_hangar_set_time(update, context)
-
     if "hangar_display_menu" == query.data:
-        # handler_hangar_display_menu(update, context)
-        pass
+        return await handler_hangar_display_menu(update, context)
     if "hangar_light_menu" == query.data:
-        # handler_hangar_light_menu(update, context)
-        pass
-    return keyboard_handler(update, context)
+        return await handler_hangar_light_menu(update, context)
+
+    return await start_handler(update, context)
 
 
 @require_admin
@@ -457,3 +456,88 @@ async def handler_hangar_set_time(update: Update, context: ContextTypes.DEFAULT_
     sync_time()
     await context.bot.send_message(chat_id=update.effective_chat.id, text="Команда отправлена")
 
+
+@require_admin
+async def handler_hangar_display_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, **kwargs):
+    reply_markup = InlineKeyboardMarkup(HANGAR_DISPLAY_KBD_LAYOUT)
+    text = ""
+    await send_markup(update, context, reply_markup, text)
+    return
+
+
+@require_admin
+async def hangar_display_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, **kwargs):
+    query = update.callback_query
+    text = "Команда отправлена"
+    await query.answer()
+    if query.data == "hangar_display_mode_reset":
+        display_show_all()
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+
+    if query.data == "hangar_display_mode_date":
+        display_show_date()
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+
+    if query.data == "hangar_display_mode_time":
+        display_show_time()
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+
+    if query.data == "hangar_display_mode_painted":
+        display_show_painted()
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+
+    if query.data == "hangar_display_mode_unpainted":
+        display_show_unpainted()
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+
+
+@require_admin
+async def handler_hangar_light_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, **kwargs):
+    reply_markup = InlineKeyboardMarkup(HANGAR_LIGHT_KBD_LAYOUT)
+    text = ""
+    await send_markup(update, context, reply_markup, text)
+    return
+
+
+@require_admin
+async def hangar_light_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, **kwargs):
+    query = update.callback_query
+    text = "Команда отправлена"
+    await query.answer()
+    if query.data == "hangar_light_mode_off":
+        set_light_off()
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+
+    if query.data == "hangar_light_mode_fade":
+        set_light_fade()
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+
+    if query.data == "hangar_light_mode_fixed":
+        set_light_fixed()
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+
+    if query.data == "hangar_light_mode_low":
+        set_light_low()
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+
+    if query.data == "hangar_light_mode_mid":
+        set_light_mid()
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+
+    if query.data == "hangar_light_mode_high":
+        set_light_full()
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+
+
+async def send_markup(update: Update, context: ContextTypes.DEFAULT_TYPE, markup: InlineKeyboardMarkup, text: str):
+    if update.callback_query is not None:
+        if update.callback_query.message.reply_markup == markup:
+            return
+
+        await context.bot.edit_message_text(chat_id=update.effective_chat.id,
+                                            message_id=update.callback_query.message.message_id,
+                                            text=text,
+                                            reply_markup=markup)
+        return
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=text, reply_markup=markup)
+    return

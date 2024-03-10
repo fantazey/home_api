@@ -114,7 +114,7 @@ def create_model(user: User, name: str) -> int:
 
 @sync_to_async
 def want_model(user: User, name: str) -> int:
-    model = Model(name=name, user=user, status=Model.Status.WISHED, buy_date=datetime.datetime.now())
+    model = Model(name=name, user=user, status=Model.Status.WISHED)
     model.save()
     return model.id
 
@@ -139,13 +139,17 @@ def get_last_model_progress(user: User, model_id: int) -> dict:
     """
     model = Model.objects.get(id=model_id, user=user)
     progress = ModelProgress.objects.filter(model__user=user, model_id=model_id).order_by('id').last()
+    if progress is not None:
+        return {
+            'id': progress.id,
+            'description': progress.description,
+            'status': progress.get_status_display(),
+            'time': progress.time,
+            'datetime': progress.datetime.strftime("%d-%m-%Y %H:%M:%S"),
+            'model': model
+        }
     return {
-        'id': progress.id,
-        'description': progress.description,
-        'status': progress.get_status_display(),
-        'time': progress.time,
-        'datetime': progress.datetime.strftime("%d-%m-%Y %H:%M:%S"),
-        'model': model
+
     }
 
 

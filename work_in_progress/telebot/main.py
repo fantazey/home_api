@@ -16,7 +16,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, Messa
 from home_api.private_settings import TOKEN
 from .handlers import start_handler, keyboard_handler, handler_progress_add, handler_image_add, \
     handler_model_buy, handler_model_want, error_handler, handler_hangar_light, model_keyboard_handler, \
-    progress_keyboard_handler
+    progress_keyboard_handler, handler_hangar_painted, handler_hangar_unpainted
 
 
 logging.basicConfig(
@@ -61,6 +61,14 @@ async def hangar_light(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return await handler_hangar_light(update, context)
 
 
+async def hangar_painted(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    return await handler_hangar_painted(update, context)
+
+
+async def hangar_unpainted(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    return await handler_hangar_unpainted(update, context)
+
+
 async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return await error_handler(update, context)
 
@@ -89,6 +97,12 @@ def run_telebot():
 
     light_pattern = re.compile(r"^свет .*", flags=re.IGNORECASE)
     application.add_handler(MessageHandler(filters.Regex(light_pattern), hangar_light))
+
+    light_pattern = re.compile(r"^покрас .*", flags=re.IGNORECASE)
+    application.add_handler(MessageHandler(filters.Regex(light_pattern), hangar_painted))
+
+    light_pattern = re.compile(r"^непокрас .*", flags=re.IGNORECASE)
+    application.add_handler(MessageHandler(filters.Regex(light_pattern), hangar_unpainted))
 
     application.add_error_handler(error)
 

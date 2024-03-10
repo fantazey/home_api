@@ -5,6 +5,7 @@ import time
 
 device_addr = "B7:7B:1A:07:21:AF"
 socket_path = "/tmp/homeapi/hangar.sock"
+socket_pid = "/tmp/homeapi/server.pid"
 
 
 def send_command(command):
@@ -14,13 +15,39 @@ def send_command(command):
     sock.connect((device_addr, port))
     time.sleep(2)
     print("Send command:", command)
-    sock.send('@' + command + '#')
-    time.sleep(1)
-    print("Close hangar connection")
-    sock.close()
+    try:
+        sock.send('@' + command + '#')
+    except Exception:
+        time.sleep(2)
+        sock.send('@' + command + '#')
+    finally:
+        time.sleep(1)
+        print("Close hangar connection")
+        sock.close()
+
+
+def restart_check():
+    if not os.path.exists(socket_pid):
+        return False
+
+    with open(socket_pid, 'r') as reader:
+        pid = reader.readline()
+        if pid is None or len(pid) == 0:
+            return False
+        exitcode = os.system("ps -o cmd= {}".format(pid))
+        if exitcode == 0:
+            return True
+    return False
 
 
 def main():
+    if restart_check():
+        print("Restart check: Server already running. Exit")
+        return
+    pid = os.getpid()
+    with open(socket_pid, 'w') as writer:
+        print("Save pid {} to file".format(pid))
+        writer.write(str(pid))
     if os.path.exists(socket_path):
         print("Remove old socket file")
         os.remove(socket_path)

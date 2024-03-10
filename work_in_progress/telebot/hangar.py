@@ -68,11 +68,15 @@ def set_light_fade():
     _set_light_mode(L_FADE)
 
 
+def set_light_fixed():
+    _set_light_mode(L_FIXED)
+
+
 def set_light_value(value: int):
     if value == 0:
         set_light_off()
         return
-    _set_light_mode(L_FIXED)
+    set_light_fixed()
     _set_brightness(value)
 
 
@@ -99,6 +103,10 @@ def display_show_all():
 
 def display_show_date():
     _set_display_mode(D_DATE_MON)
+
+
+def display_show_time():
+    _set_display_mode(D_HOUR_MIN)
 
 
 def display_show_painted():

@@ -75,7 +75,7 @@ def about(request):
 
 
 def index(request):
-    all_models = Model.objects.annotate(last_record=Max('modelprogress__datetime')).\
+    all_models = Model.objects.annotate(last_record=Max('progress__datetime')).\
                 filter(hidden=False).\
                 order_by('-last_record')[:20]
     return render(request, 'wip/index.html', {'models': all_models})
@@ -88,7 +88,7 @@ def models(request, username):
     user = users.first()
     form = ModelFilterForm(request.GET)
     olddate = timezone.now() - datetime.timedelta(days=2000)
-    user_models = Model.objects.annotate(last_record=Max('modelprogress__datetime', default=olddate))\
+    user_models = Model.objects.annotate(last_record=Max('progress__datetime', default=olddate))\
         .filter(user__username=username)\
         .order_by('-last_record', 'buy_date', 'created')
     if form.is_valid():
