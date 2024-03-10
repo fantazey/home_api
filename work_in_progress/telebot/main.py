@@ -16,7 +16,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, Messa
 from home_api.private_settings import TOKEN
 from .handlers import start_handler, keyboard_handler, handler_progress_add, handler_image_add, \
     handler_model_buy, handler_model_want, error_handler, handler_hangar_light, model_keyboard_handler, \
-    progress_keyboard_handler, handler_hangar_painted, handler_hangar_unpainted
+    progress_keyboard_handler, handler_hangar_painted, handler_hangar_unpainted, hangar_keyboard_handler
 
 
 logging.basicConfig(
@@ -39,6 +39,10 @@ async def model_keyboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def progress_keyboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return await progress_keyboard_handler(update, context)
+
+
+async def hangar_keyboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    return await hangar_keyboard_handler(update, context)
 
 
 async def progress(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -83,6 +87,9 @@ def run_telebot():
 
     model_pattern = re.compile(r"^model.*$")
     application.add_handler(CallbackQueryHandler(model_keyboard, pattern=model_pattern))
+
+    hangar_pattern = re.compile(r"^hangar.*$")
+    application.add_handler(CallbackQueryHandler(hangar_keyboard, pattern=hangar_pattern))
 
     application.add_handler(CallbackQueryHandler(keyboard))
 

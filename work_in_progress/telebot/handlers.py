@@ -45,10 +45,6 @@ MAIN_KBD_LAYOUT = [
 ADMIN_MAIN_KBD_LAYOUT = [
     [InlineKeyboardButton("Текущая модель", callback_data="model")],
     [InlineKeyboardButton("Список моделей", callback_data="model_page_0")],
-    [InlineKeyboardButton("Ангар", callback_data="hangar_menu")],
-]
-
-HANGAR_MAIN_KBD_LAYOUT = [
     [InlineKeyboardButton("Дисплей", callback_data="hangar_display_menu")],
     [InlineKeyboardButton("Свет", callback_data="hangar_light_menu")],
     [InlineKeyboardButton("Обновить время", callback_data="hangar_set_time")]
@@ -107,10 +103,12 @@ def can_edit_message(update: Update, markup: InlineKeyboardMarkup):
 
 
 @require_user
-async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, **kwargs):
+async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, user: User, **kwargs):
     kbd = BASE_MAIN_KBD_LAYOUT
     if 'model_id' in context.user_data and context.user_data['model_id'] is not None:
         kbd = MAIN_KBD_LAYOUT
+    if user.username == 'andy':
+        kbd = ADMIN_MAIN_KBD_LAYOUT
     reply_markup = InlineKeyboardMarkup(kbd)
     text = "\n\n".join(RULES)
     await send_markup(update, context, reply_markup, text)
@@ -443,12 +441,57 @@ async def hangar_keyboard_handler(update: Update, context: ContextTypes.DEFAULT_
     await query.answer()
     if "hangar_set_time" == query.data:
         return await handler_hangar_set_time(update, context)
+
     if "hangar_display_menu" == query.data:
         return await handler_hangar_display_menu(update, context)
+
     if "hangar_light_menu" == query.data:
         return await handler_hangar_light_menu(update, context)
 
-    return await start_handler(update, context)
+    text = "Команда отправлена"
+    if "hangar_display_mode_reset" == query.data:
+        display_show_all()
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+
+    if "hangar_display_mode_date" == query.data:
+        display_show_date()
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+
+    if "hangar_display_mode_time" == query.data:
+        display_show_time()
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+
+    if "hangar_display_mode_painted" == query.data:
+        display_show_painted()
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+
+    if "hangar_display_mode_unpainted" == query.data:
+        display_show_unpainted()
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+
+    if "hangar_light_mode_off" == query.data:
+        set_light_off()
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+
+    if "hangar_light_mode_fade" == query.data:
+        set_light_fade()
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+
+    if "hangar_light_mode_fixed" == query.data:
+        set_light_fixed()
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+
+    if "hangar_light_mode_low" == query.data:
+        set_light_low()
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+
+    if "hangar_light_mode_mid" == query.data:
+        set_light_mid()
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+
+    if "hangar_light_mode_high" == query.data:
+        set_light_full()
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
 
 @require_admin
@@ -460,73 +503,17 @@ async def handler_hangar_set_time(update: Update, context: ContextTypes.DEFAULT_
 @require_admin
 async def handler_hangar_display_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, **kwargs):
     reply_markup = InlineKeyboardMarkup(HANGAR_DISPLAY_KBD_LAYOUT)
-    text = ""
+    text = "Меню экрана ангара"
     await send_markup(update, context, reply_markup, text)
     return
-
-
-@require_admin
-async def hangar_display_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, **kwargs):
-    query = update.callback_query
-    text = "Команда отправлена"
-    await query.answer()
-    if query.data == "hangar_display_mode_reset":
-        display_show_all()
-        return await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
-
-    if query.data == "hangar_display_mode_date":
-        display_show_date()
-        return await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
-
-    if query.data == "hangar_display_mode_time":
-        display_show_time()
-        return await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
-
-    if query.data == "hangar_display_mode_painted":
-        display_show_painted()
-        return await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
-
-    if query.data == "hangar_display_mode_unpainted":
-        display_show_unpainted()
-        return await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
 
 @require_admin
 async def handler_hangar_light_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, **kwargs):
     reply_markup = InlineKeyboardMarkup(HANGAR_LIGHT_KBD_LAYOUT)
-    text = ""
+    text = "Меню подсветки ангара"
     await send_markup(update, context, reply_markup, text)
     return
-
-
-@require_admin
-async def hangar_light_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, **kwargs):
-    query = update.callback_query
-    text = "Команда отправлена"
-    await query.answer()
-    if query.data == "hangar_light_mode_off":
-        set_light_off()
-        return await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
-
-    if query.data == "hangar_light_mode_fade":
-        set_light_fade()
-        return await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
-
-    if query.data == "hangar_light_mode_fixed":
-        set_light_fixed()
-        return await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
-
-    if query.data == "hangar_light_mode_low":
-        set_light_low()
-        return await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
-
-    if query.data == "hangar_light_mode_mid":
-        set_light_mid()
-        return await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
-
-    if query.data == "hangar_light_mode_high":
-        set_light_full()
-        return await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
 
 async def send_markup(update: Update, context: ContextTypes.DEFAULT_TYPE, markup: InlineKeyboardMarkup, text: str):
