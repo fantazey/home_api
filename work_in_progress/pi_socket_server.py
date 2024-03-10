@@ -9,6 +9,7 @@ socket_pid = "/tmp/homeapi/server.pid"
 
 
 def send_command(command):
+    time.sleep(1)
     sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
     port = 1
     print("Connecting to hangar")
@@ -17,6 +18,7 @@ def send_command(command):
     print("Send command:", command)
     try:
         sock.send('@' + command + '#')
+        time.sleep(2)
     except Exception:
         time.sleep(2)
         sock.send('@' + command + '#')

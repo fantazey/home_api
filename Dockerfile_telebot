@@ -1,3 +1,4 @@
 FROM home-api
+ENV TZ Europe/Moscow
 COPY . .
 CMD ["python", "manage.py", "start_telebot"]
