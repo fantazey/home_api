@@ -2,7 +2,7 @@ from os import walk
 from os import path
 
 from bs4 import BeautifulSoup
-from work_in_progress.models import KillTeam, Operative
+from work_in_progress.models import KillTeam, KillTeamOperative
 
 SOURCE_PATH = path.join(path.dirname(path.abspath(__file__)), 'fixtures', 'kill-team')
 
@@ -33,6 +33,6 @@ def read_fixture_file(source):
     operatives = soup.find_all('selectionEntry', {'type': 'model'})
     for entry in operatives:
         name = entry.attrs['name']
-        if not Operative.objects.filter(name=name, kill_team=kt).exists():
-            unit = Operative(name=name, kill_team=kt)
+        if not KillTeamOperative.objects.filter(name=name, kill_team=kt).exists():
+            unit = KillTeamOperative(name=name, kill_team=kt)
             unit.save()
