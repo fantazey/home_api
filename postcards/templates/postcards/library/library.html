@@ -8,9 +8,11 @@
     <a href="{% url 'postcards:index' %}">
         <button class="small ui button secondary">к входящим открыткам</button>
     </a>
+    {% if user.is_authenticated %}
     <a href="{% url 'postcards:library_add' %}">
         <button class="small ui button secondary">Добавить новую открытку</button>
     </a>
+    {% endif %}
     <div class="ui grid container aligned center">
 
         {% for postcard in postcards %}
