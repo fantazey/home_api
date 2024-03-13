@@ -1,6 +1,7 @@
 venv
 *.pyc
 .idea
+media
 db.sqlite3
 Dockerfile
 work_in_progress/battlescribe/fixtures
