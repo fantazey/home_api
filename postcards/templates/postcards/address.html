@@ -1,0 +1,26 @@
+{% extends 'postcards/base.html' %}
+{% block header %}
+    <h1 class="ui header"> Добавление адреса</h1>
+{% endblock header %}
+{% block content %}
+    <div class="ui two column container grid">
+        <div class="column">
+            {% if postcard.image %}
+                <div class="ui image" style="cursor: pointer;">
+                    <img src="{{ postcard.image.url }}" style="max-height: 300px">
+                </div>
+            {% endif %}
+            <form  class="ui form" method="post"
+                   enctype="multipart/form-data"
+                   action="{% url 'postcards:address_recipient' postcard.id %}">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <input type="submit" value="Отправка адреса" class="small ui button secondary">
+            </form>
+            <a href="{% url 'postcards:library' %}">
+                <button class="small ui button">к библиотеке открыток</button>
+            </a>
+        </div>
+    </div>
+
+{% endblock content %}

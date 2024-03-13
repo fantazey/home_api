@@ -3,12 +3,20 @@
    <h1 class="ui header" style="color: #4f20b5;font-size: 4em;text-align: center">Открыточная</h1>
 {% endblock header %}
 {% block content %}
+        {% if user.is_authenticated %}
     <a href="{% url 'postcards:add' %}">
-         <button class="small ui button secondary">Добавить открытку</button>
+         <button class="small ui button secondary">Добавить новую входящую открытку</button>
     </a>
+    {% endif %}
+
     <a href="{% url 'postcards:library' %}">
             <button class="small ui button secondary">Открытки к отправке</button>
     </a>
+    {% if user.is_authenticated %}
+        <a href="{% url 'postcards:logout' %}" style="color: white">Выход</a>
+    {% else %}
+        <a href="{% url 'postcards:login' %}" style="color: white">Вход</a>
+    {% endif %}
 
 <div class="ui grid container aligned center">
 
@@ -19,19 +27,23 @@
                  <img src="{{ postcard.image.url }}" style="max-height: 300px">
                 </div>
             {% endif %}
-        <div class="content">
-            <div class="description">Отправитель: {{ postcard.sender }}</div>
-        <div class="description">Страна: {{ postcard.country }}</div>
-        </div>
-            <div class="extra content">Дней в пути - {{ postcard.travel_time }}</div>
+            <div class="content">
+                <div class="description">Отправитель: {{ postcard.sender }}</div>
+                <div class="description">Страна: {{ postcard.country }}</div>
+            </div>
+            <div class="extra content">Дней в пути: {{ postcard.travel_time }}</div>
+            <div class="extra centent">Дата получения: {{ postcard.date_receiving }}</div>
             <div class="extra content">
+                {% if user.is_authenticated %}
                 <a href="{% url 'postcards:edit' postcard.id %}">
                     <i class="pencil alternate icon"></i>
                 </a>
                 <a href="{% url 'postcards:delete' postcard.id %}">
                     <i class="trash alternate icon"></i>
                 </a>
+                {% endif %}
             </div>
         </div>
     {% endfor %}
+</div>
 {% endblock content %}
