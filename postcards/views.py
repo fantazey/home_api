@@ -1,12 +1,43 @@
 from django.shortcuts import render, redirect
 from .models import Postcard, Library, Address
 from django.views.generic.edit import CreateView
-from .forms import PostcardForm, LibraryAddForm, AddressAddForm
+from .forms import PostcardForm, LibraryAddForm, AddressAddForm, LoginForm
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+
+
+def log_in(request):
+    if request.user.is_authenticated:
+        return redirect('postcards:index')
+
+    if request.method == 'GET':
+        form = LoginForm()
+        return render(request, 'postcards/login.html', {'form': form})
+
+    form = LoginForm(request.POST)
+    if form.is_valid():
+        username = form.cleaned_data['username']
+        password = form.cleaned_data['password']
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            return redirect('postcards:index')
+    return render(request, 'postcards/login.html', {'form': form})
+
+
+def log_out(request):
+    logout(request)
+    return redirect('postcards:index')
 
 
 def index(request):
-
-    return render(request, 'postcards/index.html', {'postcards': Postcard.objects.all().order_by('date_receiving')})
+    return render(request,
+                  'postcards/index.html',
+                  {
+                      'postcards': Postcard.objects.all().order_by('date_receiving'),
+                      'user': request.user
+                  })
 
 
 class PostcardCreateView(CreateView):
@@ -19,6 +50,7 @@ class PostcardCreateView(CreateView):
         return context
 
 
+@login_required(login_url='/postcards/login')
 def edit(request, id):
     f = Postcard.objects.get(id=id)
     if request.method == 'GET':

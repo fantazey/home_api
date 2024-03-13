@@ -1,4 +1,4 @@
-from django.forms import ModelForm, ImageField, CharField, IntegerField, ChoiceField, Form, DateField
+from django.forms import ModelForm, ImageField, CharField, IntegerField, ChoiceField, Form, DateField, PasswordInput
 
 from .models import Postcard
 
@@ -28,3 +28,9 @@ class AddressAddForm(Form):
     name = CharField(max_length="70", label='имя получателя')
     postcode = CharField(max_length="30", label='postcode')
     address = CharField(max_length="70", label='адрес')
+
+
+class LoginForm(Form):
+    username = CharField(label='Логин', max_length=40)
+    password = CharField(label='Пароль', widget=PasswordInput, max_length=40)
+

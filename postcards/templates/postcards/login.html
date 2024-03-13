@@ -1,0 +1,35 @@
+{% extends 'postcards/base.html' %}
+
+{% block content %}
+    <div class="ui five column doubling stackable grid container">
+        <div class="column"></div>
+        <div class="column"></div>
+        <div class="column">
+            <form action="{% url 'postcards:login' %}" method="post" class="ui form">
+                {% csrf_token %}
+                <div class="field {{ form.username.errors|yesno:'error,' }}">
+                    <label>{{ form.username.label }}</label>
+                    {{ form.username }}
+                    {% if form.username.errors %}
+                        <div class="ui pointing red basic label">
+                            {{ form.username.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="field {{ form.password.errors|yesno:'error,' }}">
+                    <label>{{ form.password.label }}</label>
+                    {{ form.password }}
+                    {% if form.password.errors %}
+                        <div class="ui pointing red basic label">
+                            {{ form.password.errors }}
+                        </div>
+                    {% endif %}
+                </div>
+                <div>
+                    <button class="ui button" type="submit">Вход</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    </div>
+{% endblock content %}

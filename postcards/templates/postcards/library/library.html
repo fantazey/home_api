@@ -29,9 +29,12 @@
 
             <div class="extra content">
                 {% if not postcard.is_reserved %}
+                        {% if user.is_authenticated %}
+
                     <a href="{% url 'postcards:library_delete' postcard.id %}">
                         <i class="trash alternate icon"></i>
                     </a>
+                            {% endif %}
                 {% endif %}
                 </div>
             </div>
