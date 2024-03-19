@@ -1,0 +1,8 @@
+FROM python:3.9.13-slim-buster
+RUN apt-get update \
+    && apt-get -y install libpq-dev gcc libxml2 libxml2-dev libxslt1.1 libxslt1-dev libjpeg-dev zlib1g-dev
+WORKDIR /usr/src/app
+COPY req.txt ./
+RUN pip install --no-cache-dir -r req.txt
+ENV TZ Europe/Moscow
+CMD ["ls"]

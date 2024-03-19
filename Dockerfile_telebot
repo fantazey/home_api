@@ -1,4 +1,3 @@
-FROM home-api
-ENV TZ Europe/Moscow
+FROM fantazey/home-api-base:slim
 COPY . .
 CMD ["python", "manage.py", "start_telebot"]
