@@ -8,3 +8,5 @@ media
 .DS_Store
 work_in_progress/battlescribe/fixtures
 node_modules
+travel/static
+travel/templates/travel/index.html
