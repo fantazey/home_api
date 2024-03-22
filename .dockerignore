@@ -8,3 +8,4 @@ Dockerfile_web
 Dockerfile_telebot
 work_in_progress/battlescribe/fixtures
 home_api/private_settings.py
+travel/travel_client

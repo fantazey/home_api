@@ -8,9 +8,9 @@ class Place(models.Model):
     user = models.ForeignKey(User, verbose_name="Пользователь", on_delete=models.SET_NULL, null=True)
     longitude = models.FloatField(verbose_name="Долгота")
     latitude = models.FloatField(verbose_name="Широта")
-    date = models.DateField(verbose_name="Дата посещения")
+    date = models.DateField(verbose_name="Дата посещения", auto_now_add=True)
     rating = models.IntegerField(verbose_name="Оценка", validators=[MinValueValidator(limit_value=0),
-                                                                    MaxValueValidator(limit_value=5)])
+                                                                    MaxValueValidator(limit_value=5)], default=0)
 
     class Meta:
         verbose_name = "Посещенное место"
