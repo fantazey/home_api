@@ -1,3 +1,7 @@
 from django.contrib import admin
 
-# Register your models here.
+from .models import Postcard, Library, Address
+
+admin.site.register(Postcard)
+admin.site.register(Library)
+admin.site.register(Address)
