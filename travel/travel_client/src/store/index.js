@@ -12,14 +12,12 @@ export default createStore({
       return state.places
     }
   },
-  mutations: {
-  },
+  mutations: {},
   actions: {
     async loadPlacesData ({ state }) {
       const response = await fetch('/travel/api/places.json')
       state.places = await response.json()
     }
   },
-  modules: {
-  }
+  modules: {}
 })
