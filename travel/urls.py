@@ -8,6 +8,6 @@ router.register(r'places', PlaceViewSet)
 
 app_name = 'travel'
 urlpatterns = [
-    path('', index),
+    path('', index, name='index'),
     path('api/', include(router.urls)),
 ]
