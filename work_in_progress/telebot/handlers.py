@@ -55,7 +55,8 @@ HANGAR_DISPLAY_KBD_LAYOUT = [
     [InlineKeyboardButton("Дата", callback_data="hangar_display_mode_date")],
     [InlineKeyboardButton("Время", callback_data="hangar_display_mode_time")],
     [InlineKeyboardButton("Покрас", callback_data="hangar_display_mode_painted")],
-    [InlineKeyboardButton("Непокрас", callback_data="hangar_display_mode_unpainted")]
+    [InlineKeyboardButton("Непокрас", callback_data="hangar_display_mode_unpainted")],
+    [InlineKeyboardButton("^", callback_data="start")]
 ]
 
 HANGAR_LIGHT_KBD_LAYOUT = [
@@ -64,7 +65,8 @@ HANGAR_LIGHT_KBD_LAYOUT = [
     [InlineKeyboardButton("Фиксированный", callback_data="hangar_light_mode_fixed")],
     [InlineKeyboardButton("Низкий", callback_data="hangar_light_mode_low")],
     [InlineKeyboardButton("Средний", callback_data="hangar_light_mode_mid")],
-    [InlineKeyboardButton("Полный", callback_data="hangar_light_mode_high")]
+    [InlineKeyboardButton("Полный", callback_data="hangar_light_mode_high")],
+    [InlineKeyboardButton("^", callback_data="start")]
 ]
 
 
