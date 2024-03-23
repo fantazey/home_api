@@ -10,3 +10,7 @@ work_in_progress/battlescribe/fixtures
 node_modules
 travel/static
 travel/templates/travel/index.html
+static/postcards
+static/rest_framework
+static/travel
+static/wip
