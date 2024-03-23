@@ -123,6 +123,16 @@ docker run -d --name=home-api-nginx \
 HERE
 }
 
+function deploy_blog() {
+ssh pi@pi << HERE
+docker run -d --name blog \
+  --restart=unless-stopped \
+  -e url=http://blog.fantazey.ru \
+  -v /home/pi/Projects/blog:/var/lib/ghost/content \
+  -p 8009:2368 \
+  ghost:3-alpine
+}
+
 while [ -n "$1" ]
 do
   case "$1" in
