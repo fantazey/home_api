@@ -1,10 +1,11 @@
-from django.shortcuts import render, redirect
-from .models import Postcard, Library, Address
-from django.views.generic.edit import CreateView
-from .forms import PostcardForm, LibraryAddForm, AddressAddForm, LoginForm
+from django.shortcuts import render, redirect, reverse
+from django.views.generic.edit import CreateView, UpdateView
+from django.views.generic import ListView, View
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import User
+
+from .models import Postcard, Library, Address
+from .forms import PostcardForm, LibraryAddForm, AddressAddForm, LoginForm
 
 
 def log_in(request):
@@ -31,13 +32,16 @@ def log_out(request):
     return redirect('postcards:index')
 
 
-def index(request):
-    return render(request,
-                  'postcards/index.html',
-                  {
-                      'postcards': Postcard.objects.all().order_by('date_receiving'),
-                      'user': request.user
-                  })
+class PostcardsListView(ListView):
+    model = Postcard
+    context_object_name = 'postcards'
+    paginate_by = 5
+    ordering = ['id']
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['user'] = self.request.user
+        return context
 
 
 class PostcardCreateView(CreateView):
@@ -50,27 +54,24 @@ class PostcardCreateView(CreateView):
         return context
 
 
-@login_required(login_url='/postcards/login')
-def edit(request, id):
-    f = Postcard.objects.get(id=id)
-    if request.method == 'GET':
-        p = PostcardForm(initial={
-            'sender': f.sender,
-            'travel_time': f.travel_time,
-            'country': f.country,
-            'image': f.image
-        })
-        return render(request, 'postcards/edit.html', {'form': p, 'title': 'редактирование открытки', 'postcard': f})
-    if request.method == 'POST':
-        p = PostcardForm(request.POST, request.FILES)
-        if p.is_valid():
-            f.sender = p.cleaned_data['sender']
-            f.travel_time = p.cleaned_data['travel_time']
-            f.image = p.cleaned_data['image']
-            f.country = p.cleaned_data['country']
-            f.save()
+class PostcardEditView(UpdateView):
+    model = Postcard
+    form_class = PostcardForm
+    success_url = '/postcards'
+    pk_url_kwarg = 'id'
+    template_name_suffix = '_edit_form'
+
+    def get_context_data(self, *args,  **kwargs):
+        context = super().get_context_data(**kwargs)
+        return context
+
+
+class PostcardDeleteView(View):
+    def get(self, *args, **kwargs):
+        f = Postcard.objects.get(id=self.kwargs['id'])
+        if self.request.method == 'GET':
+            f.delete()
             return redirect('postcards:index')
-        return render(request, 'postcards/edit.html', {'form': p, 'title': 'редактирование открытки', 'postcard': f})
 
 
 def delete(request, id):
@@ -80,12 +81,14 @@ def delete(request, id):
         return redirect('postcards:index')
 
 
-def library(request):
-    """
-    главная страница со списком открыток которые я могу отправить
-    """
-    postcards = Library.objects.all()
-    return render(request, 'postcards/library/library.html', {'postcards': postcards})
+class LibraryListView(ListView):
+    model = Library
+    context_object_name = 'postcards'
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['user'] = self.request.user
+        return context
 
 
 def library_delete(request, id):

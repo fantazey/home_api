@@ -1,4 +1,4 @@
-from django.forms import ModelForm, ImageField, CharField, IntegerField, ChoiceField, Form, DateField, PasswordInput
+from django.forms import ImageField, CharField, IntegerField, ChoiceField, Form, PasswordInput, ModelForm, DateField
 
 from .models import Postcard
 
