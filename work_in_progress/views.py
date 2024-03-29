@@ -1,66 +1,65 @@
 import datetime
 
-from django.shortcuts import render, redirect
-from django.http import Http404
-from django.urls import reverse
-from django.utils import timezone
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.contrib.auth.views import LoginView
 from django.db.models import Max, Sum
+from django.http import Http404
+from django.shortcuts import render, redirect
+from django.urls import reverse
+from django.utils import timezone
+from django.views.generic import ListView
+from django.views.generic.edit import FormView, CreateView
 
-from .models import Model, ModelProgress, ModelImage
-from .forms import AddModelForm, LoginForm, AddProgressForm, RegistrationForm, EditModelForm, ModelFilterForm
+from .forms import AddModelForm, LoginForm, AddProgressForm, RegistrationForm, EditModelForm, \
+    ModelFilterForm, PaginationForm
+from .models import Model, ModelProgress, ModelImage, Artist
 
 
-def log_in(request):
-    if request.user.is_authenticated:
-        return redirect(reverse('wip:models', kwargs={'username': request.user.username}))
+class WipLoginView(LoginView):
+    authentication_form = LoginForm
+    template_name = "wip/login.html"
+    redirect_authenticated_user = True
 
-    if request.method == 'GET':
-        form = LoginForm()
-        return render(request, 'wip/login.html', {'form': form})
+    def get_success_url(self):
+        return reverse('wip:models', kwargs={'username': self.request.user.username})
 
-    form = LoginForm(request.POST)
-    if form.is_valid():
+
+class WipRegisterView(FormView):
+    model = Artist
+    form_class = RegistrationForm
+    template_name = 'wip/register.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            return redirect(reverse('wip:index'))
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_success_url(self):
+        return reverse('wip:models', kwargs={'username': self.request.user.username})
+
+    def form_valid(self, form):
         username = form.cleaned_data['username']
         password = form.cleaned_data['password']
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            login(request, user)
-            return redirect(reverse('wip:models', kwargs={'username': request.user.username}))
-        form.add_error("password", "Не правильный логин или пароль")
-    return render(request, 'wip/login.html', {'form': form}, status=400)
+        first_name = form.cleaned_data['first_name']
+        telegram_name = form.cleaned_data['telegram_name']
+        if User.objects.filter(username=username).exists():
+            form.add_error('username', 'Пользователь существует')
+            return render(self.request, 'wip/register.html', {'form': form}, status=400)
 
+        user = User(username=username, first_name=first_name)
+        user.set_password(password)
+        user.save()
+        artist = Artist(user=user, telegram_name=telegram_name)
+        artist.save()
+        user = authenticate(self.request, username=username, password=password)
+        if user is None:
+            form.add_error('username', 'ошибка при создании пользователя')
+            return render(self.request, 'wip/register.html', {'form': form}, status=400)
 
-def register(request):
-    if request.user.is_authenticated:
+        login(self.request, user)
         return redirect(reverse('wip:index'))
-
-    if request.method == 'GET':
-        form = RegistrationForm()
-        return render(request, 'wip/register.html', {'form': form})
-
-    form = RegistrationForm(request.POST)
-    if not form.is_valid():
-        return render(request, 'wip/register.html', {'form': form}, status=400)
-
-    username = form.cleaned_data['username']
-    password = form.cleaned_data['password']
-    if User.objects.filter(username=username).exists():
-        form.add_error('username', 'Пользователь существует')
-        return render(request, 'wip/register.html', {'form': form}, status=400)
-
-    user = User(username=username)
-    user.set_password(password)
-    user.save()
-    user = authenticate(request, username=username, password=password)
-    if user is None:
-        form.add_error('username', 'ошибка при создании пользователя')
-        return render(request, 'wip/register.html', {'form': form}, status=400)
-
-    login(request, user)
-    return redirect(reverse('wip:index'))
 
 
 @login_required(login_url='/wip/accounts/login')
@@ -74,11 +73,74 @@ def about(request):
     return render(request, 'wip/about.html')
 
 
-def index(request):
-    all_models = Model.objects.annotate(last_record=Max('progress__datetime')).\
-                filter(hidden=False).\
-                order_by('-last_record')[:20]
-    return render(request, 'wip/index.html', {'models': all_models})
+class WipIndexView(ListView):
+    model = Model
+    paginate_by = 20
+    template_name = 'wip/index.html'
+    context_object_name = 'models'
+
+    def get_queryset(self):
+        return Model.objects.annotate(last_record=Max('progress__datetime')). \
+                     filter(hidden=False). \
+                     order_by('-last_record')
+
+
+class WipUserModels(ListView):
+    model = Model
+    template_name = 'wip/models.html'
+    context_object_name = 'models'
+
+    def get_paginate_by(self, queryset):
+        return self.request.GET.get('page_size', 12)
+
+    def get_queryset(self):
+        user = self.get_user()
+        old_date = timezone.now() - datetime.timedelta(days=2000)
+        user_models = Model.objects.annotate(last_record=Max('progress__datetime', default=old_date)) \
+            .filter(user__username=user.username) \
+            .order_by('-last_record', 'buy_date', 'created')
+        form = self.get_filter_form()
+        if form.is_valid():
+            user_models = user_models.filter(status=form.cleaned_data['status'])
+        if self.request.user != user:
+            user_models = user_models.filter(hidden=False)
+        return user_models
+
+    def get_context_data(self, *args, object_list=None, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        user = self.get_user()
+        progress_list = ModelProgress.objects.filter(model__user=user, time__gt=0)
+        progress_by_date = {}
+        for progress in progress_list:
+            d = timezone.localtime(progress.datetime).date().strftime("%d-%m-%Y")
+            if d not in progress_by_date.keys():
+                progress_by_date[d] = 0
+            progress_by_date[d] += progress.time
+        date_map = build_map(progress_by_date)
+        sum_time_by_status = progress_list.filter(status__isnull=False).values("status").annotate(
+            total_time=Sum('time'))
+        status_map = [(Model.Status(x['status']).label, x['total_time']) for x in sum_time_by_status]
+
+        return context | {
+            'user': user,
+            'filter_form': self.get_filter_form(),
+            'pagination_form': self.get_pagination_form(),
+            'date_map': date_map,
+            'time_status_map': status_map
+        }
+
+    def get_user(self) -> User:
+        users = User.objects.filter(username=self.kwargs['username'])
+        if not users.exists():
+            raise Http404("Пользователь не найден")
+        return users.first()
+
+    def get_filter_form(self):
+        return ModelFilterForm(self.request.GET)
+
+    def get_pagination_form(self):
+        return PaginationForm(self.request.GET, initial={'page_size': self.get_paginate_by(self)})
+
 
 
 def models(request, username):
@@ -88,8 +150,8 @@ def models(request, username):
     user = users.first()
     form = ModelFilterForm(request.GET)
     olddate = timezone.now() - datetime.timedelta(days=2000)
-    user_models = Model.objects.annotate(last_record=Max('progress__datetime', default=olddate))\
-        .filter(user__username=username)\
+    user_models = Model.objects.annotate(last_record=Max('progress__datetime', default=olddate)) \
+        .filter(user__username=username) \
         .order_by('-last_record', 'buy_date', 'created')
     if form.is_valid():
         user_models = user_models.filter(status=form.cleaned_data['status'])
@@ -129,7 +191,7 @@ def build_map(progress_by_date):
         x = (week_num * 10) + (week_num + 1) * 2
         y = (wd * 10) + (wd + 1) * 2
         value = progress_by_date[date_str] if date_str in keys else 0
-        week[wd] = (x, y, value, current_date.day, x+5, y+8)
+        week[wd] = (x, y, value, current_date.day, x + 5, y + 8)
         if wd == 6:
             date_map.append(week)
             week_num += 1
@@ -160,7 +222,7 @@ def add_model(request):
                   status=Model.Status.WISHED,
                   battlescribe_unit=form.cleaned_data['bs_unit'],
                   buy_date=form.cleaned_data['buy_date'],
-                  hidden = form.cleaned_data['hidden'])
+                  hidden=form.cleaned_data['hidden'])
 
     progress_title = "Захотелось новую модельку"
     if form.cleaned_data['in_inventory']:

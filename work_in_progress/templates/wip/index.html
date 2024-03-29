@@ -4,7 +4,7 @@
 <h2>
     Лента WIP
 </h2>
-<table class="celled ui table">
+<table class="celled ui table" style="margin-bottom: 10px">
 <thead>
     <tr>
         <th>Название</th>
@@ -48,5 +48,6 @@
     {% endfor %}
 </tbody>
 </table>
+{% include 'wip/widgets/pagination.html' with page_obj=page_obj %}
 {% include 'wip/widgets/image_modal.html' %}
 {% endblock %}

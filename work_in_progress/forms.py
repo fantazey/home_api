@@ -2,8 +2,9 @@ from datetime import datetime
 
 from django import forms
 from django.core.exceptions import ValidationError
+from django.contrib.auth.forms import AuthenticationForm
 
-from .models import BSCategory, BSUnit, Model
+from .models import BSCategory, BSUnit, Model, Artist
 
 
 class AddModelForm(forms.Form):
@@ -83,14 +84,35 @@ class AddProgressForm(forms.Form):
                               required=False)
 
 
-class LoginForm(forms.Form):
-    username = forms.CharField(label='Логин', max_length=40)
-    password = forms.CharField(label='Пароль', widget=forms.PasswordInput, max_length=40)
+class LoginForm(AuthenticationForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['username'].label = 'Логин'
+        self.fields['username'].max_length = 40
+        self.fields['password'].label = 'Пароль'
+        self.fields['password'].max_length = 40
 
 
-class RegistrationForm(LoginForm):
-    first_name = forms.CharField(label='Имя', max_length=40)
+class RegistrationForm(forms.Form):
+    first_name = forms.CharField(label='Имя', max_length=40, required=True)
+    telegram_name = forms.CharField(label='Телеграм', max_length=40, required=False)
+    username = forms.CharField(label='Логин', max_length=40, required=True)
+    password = forms.CharField(label='Пароль', max_length=40, required=True,
+                               widget=forms.PasswordInput(attrs={"autocomplete": "current-password"}))
+
+
+class PaginationForm(forms.Form):
+    page_size = forms.ChoiceField(label="На странице", choices=((x, x) for x in [6, 12, 24, 900]))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        page_size: forms.ChoiceField = self.fields['page_size']
+        if 'page_size' in self.initial:
+            value = list(filter(lambda x: x[0] == int(self.initial['page_size']), page_size.choices))
+            if len(value) > 0:
+                page_size.initial = value[0]
 
 
 class ModelFilterForm(forms.Form):
-    status = forms.ChoiceField(label="Статус", choices=Model.Status.choices)
+    status = forms.ChoiceField(label="Статус", choices=(('', '----'), *Model.Status.choices))
+

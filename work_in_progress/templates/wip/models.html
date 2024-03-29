@@ -19,13 +19,13 @@
 </div>
 <form id="filter_form" action="{% url 'wip:models' user.username %}" class="form ui" method="get">
     {{ filter_form.status }}
-<a id="submit">
-    <i class="search icon"></i>
-    Искать
-</a>
-<a id="reset_filter_form">
-    <i class="undo icon"></i>Сброс
-</a>
+    <a id="submit">
+        <i class="search icon"></i>Искать
+    </a>
+</form>
+<form id="pagination_form" action="{% url 'wip:models' user.username %}" class="form ui" method="get">
+    {{ pagination_form.as_p }}
+    <a id="submit">Применить</a>
 </form>
 {% if request.user.is_authenticated and request.user == user %}
 <a href="{% url 'wip:add_model' %}">
@@ -33,43 +33,44 @@
     Добавить
 </a>
 {% endif %}
-<div class="ui cards">
+<div class="ui cards" style="margin-bottom: 10px">
     {% for model in models %}
         <div class="ui card">
-        {% if model.get_last_image_url %}
-            {% include 'wip/widgets/model_image.html' %}
-        {% else %}
-            <img src="{% static 'wip/img/default/ready.jpg' %}">
-        {% endif %}
-        <div class="content">
-            <a class="header" href="">
-                <a href="{% url 'wip:progress' user.username model.id %}">{{ model.name }}</a>
-            </a>
-            <div class="meta">
-                {{ model.get_status_display }} | {{ model.get_hours_spent|duration }}
-            </div>
-            <div class="description">
-
-            </div>
-        </div>
-        <div class="extra content">
-            {% if request.user.is_authenticated and request.user == user %}
-                <a href="{% url 'wip:edit_model' model.id %}">
-                    <i class="pencil icon"></i>
-                    Редактировать
-                </a>
-                {% include 'wip/widgets/model_actions.html' %}
-                <div style="margin-top: 30px">
-                    <a href="{% url 'wip:delete_model' model.id %}">
-                        <i class="trash alternate outline icon"></i>
-                        Удалить
-                    </a>
-                </div>
+            {% if model.get_last_image_url %}
+                {% include 'wip/widgets/model_image.html' %}
+            {% else %}
+                <img src="{% static 'wip/img/default/ready.jpg' %}">
             {% endif %}
+            <div class="content">
+                <a class="header" href="">
+                    <a href="{% url 'wip:progress' user.username model.id %}">{{ model.name }}</a>
+                </a>
+                <div class="meta">
+                    {{ model.get_status_display }} | {{ model.get_hours_spent|duration }}
+                </div>
+                <div class="description">
+
+                </div>
+            </div>
+            <div class="extra content">
+                {% if request.user.is_authenticated and request.user == user %}
+                    <a href="{% url 'wip:edit_model' model.id %}">
+                        <i class="pencil icon"></i>
+                        Редактировать
+                    </a>
+                    {% include 'wip/widgets/model_actions.html' %}
+                    <div style="margin-top: 30px">
+                        <a href="{% url 'wip:delete_model' model.id %}">
+                            <i class="trash alternate outline icon"></i>
+                            Удалить
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
         </div>
-</div>
     {% endfor %}
 </div>
+{% include 'wip/widgets/pagination.html' with page_obj=page_obj %}
 <script>
 $(document).ready(() => {
  $('#reset_filter_form').click(() => {

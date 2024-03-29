@@ -7,6 +7,7 @@
             <form action="{% url 'wip:register' %}" method="post" class="ui form">
                 {% csrf_token %}
                 {% include 'wip/widgets/form-field.html' with field=form.first_name %}
+                {% include 'wip/widgets/form-field.html' with field=form.telegram_name %}
                 {% include 'wip/widgets/form-field.html' with field=form.username %}
                 {% include 'wip/widgets/form-field.html' with field=form.password %}
                 <div>

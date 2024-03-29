@@ -4,9 +4,9 @@ from . import views
 app_name = 'wip'
 urlpatterns = [
     # common paths
-    path('accounts/login/', views.log_in, name='login'),
+    path('accounts/login/', views.WipLoginView.as_view(), name='login'),
     path('accounts/logout', views.log_out, name='logout'),
-    path('accounts/register', views.register, name='register'),
+    path('accounts/register', views.WipRegisterView.as_view(), name='register'),
     path('about', views.about, name='about'),
 
     # update status actions
@@ -27,9 +27,9 @@ urlpatterns = [
     path('<int:model_id>/finish_varnishing', views.finish_varnishing, name='finish_varnishing'),
 
     # index
-    path('', views.index, name='index'),
+    path('', views.WipIndexView.as_view(), name='index'),
     # model
-    path('<str:username>/model', views.models, name='models'),
+    path('<str:username>/model', views.WipUserModels.as_view(), name='models'),
     path('model/add', views.add_model, name='add_model'),
     path('model/<int:model_id>/edit', views.edit_model, name='edit_model'),
     path('model/<int:model_id>/delete', views.delete_model, name='delete_model'),

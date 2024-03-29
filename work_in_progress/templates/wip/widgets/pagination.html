@@ -1,0 +1,23 @@
+{% if page_obj.paginator.num_pages > 0 %}
+<div class="ui pagination menu">
+    {% if page_obj.has_previous %}
+        <a href="?page=1" class="item">1</a>
+        <a href="?page={{ page_obj.previous_page_number }}" class="item">
+            <i class="icon left arrow"></i>
+        </a>
+    {% endif %}
+
+    <div class="item disabled">
+        {{ page_obj.number }}
+    </div>
+
+    {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}" class="item">
+            <i class="icon right arrow"></i>
+        </a>
+        <a href="?page={{ page_obj.paginator.num_pages }}" class="item">
+            {{ page_obj.paginator.num_pages }}
+        </a>
+    {% endif %}
+</div>
+{% endif %}
