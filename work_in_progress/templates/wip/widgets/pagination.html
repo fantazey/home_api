@@ -1,23 +1,16 @@
+{% load wip_filters %}
 {% if page_obj.paginator.num_pages > 0 %}
 <div class="ui pagination menu">
-    {% if page_obj.has_previous %}
-        <a href="?page=1" class="item">1</a>
-        <a href="?page={{ page_obj.previous_page_number }}" class="item">
-            <i class="icon left arrow"></i>
-        </a>
-    {% endif %}
-
-    <div class="item disabled">
-        {{ page_obj.number }}
-    </div>
-
-    {% if page_obj.has_next %}
-        <a href="?page={{ page_obj.next_page_number }}" class="item">
-            <i class="icon right arrow"></i>
-        </a>
-        <a href="?page={{ page_obj.paginator.num_pages }}" class="item">
-            {{ page_obj.paginator.num_pages }}
-        </a>
-    {% endif %}
+    {% for page_num in page_obj.paginator.page_range %}
+        {% if page_obj.number == page_num %}
+            <div class="item disabled">
+                {{ page_obj.number }}
+            </div>
+        {% else %}
+            <a href="?{% param_replace page=page_num %}" class="item">
+                {{ page_num }}
+            </a>
+        {% endif %}
+    {% endfor %}
 </div>
 {% endif %}

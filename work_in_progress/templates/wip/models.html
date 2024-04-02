@@ -2,31 +2,69 @@
 {% load wip_filters %}
 {% load static %}
 {% block content %}
+<script>
+$(function() {
+    function splitQuery() {
+        const search = location.search;
+        const res = {};
+        search.replace('?','').split('&').forEach(param => {
+            const k = param.split('=')[0];
+            res[k] = param.split('=')[1];
+        })
+        return res;
+    }
+    function glueQuery(kv) {
+        const res = [];
+        Object.keys(kv).map(k => {
+            res.push(k+'='+kv[k]);
+        });
+        return '?' + res.join('&');
+    }
+    $('#submit_work_map_filter').on('click', function(event) {
+        event.preventDefault();
+        const query = splitQuery();
+        query['work_map_year'] = $('#id_work_map_year').val();
+        location.href = glueQuery(query);
+    });
+    $('#submit_filter_form').on('click', function(event) {
+        event.preventDefault();
+        const query = splitQuery();
+        query['status'] = $('#id_status').val();
+        query['page_size'] = $('#id_page_size').val();
+        location.href = glueQuery(query);
+    })
+})
+</script>
 <h2>
     Модели пользователя {{ user.username }}
 </h2>
 <div class="ui grid relaxed">
-    <div class="column"></div>
-    <div class="eight wide column">
+    <div class="two wide column">
+        {{ work_map_filter_form.as_p }}
+        <a id="submit_work_map_filter">Применить</a>
+    </div>
+    <div class="six wide column">
         {% include 'wip/widgets/progress_map.html' %}
     </div>
-    <div class="four wide column">
-        {% for item in time_status_map %}
+    {% for col in time_status_map %}
+        <div class="three wide column">
+        {% for item in col %}
             <div>{{ item.0 }} - {{ item.1|duration }}</div>
         {% endfor %}
-    </div>
+        </div>
+    {% endfor %}
     <div class="column"></div>
 </div>
-<form id="filter_form" action="{% url 'wip:models' user.username %}" class="form ui" method="get">
-    {{ filter_form.status }}
-    <a id="submit">
-        <i class="search icon"></i>Искать
-    </a>
-</form>
-<form id="pagination_form" action="{% url 'wip:models' user.username %}" class="form ui" method="get">
-    {{ pagination_form.as_p }}
-    <a id="submit">Применить</a>
-</form>
+<div class="ui grid relaxed form ui">
+    <div class="three wide column">
+        {{ filter_form.as_div }}
+        <a id="submit_filter_form">
+            <i class="search icon"></i>
+            Искать
+        </a>
+    </div>
+</div>
+<div style="margin: 10px"></div>
 {% if request.user.is_authenticated and request.user == user %}
 <a href="{% url 'wip:add_model' %}">
 <i class="icon plus square outline"></i>

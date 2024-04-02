@@ -4,16 +4,16 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.auth.views import LoginView
-from django.db.models import Max, Sum
+from django.db.models import Max, Sum, Q
 from django.http import Http404
 from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.utils import timezone
 from django.views.generic import ListView
-from django.views.generic.edit import FormView, CreateView
+from django.views.generic.edit import FormView
 
 from .forms import AddModelForm, LoginForm, AddProgressForm, RegistrationForm, EditModelForm, \
-    ModelFilterForm, PaginationForm
+    ModelFilterForm, WorkMapFilterForm
 from .models import Model, ModelProgress, ModelImage, Artist
 
 
@@ -100,7 +100,7 @@ class WipUserModels(ListView):
             .filter(user__username=user.username) \
             .order_by('-last_record', 'buy_date', 'created')
         form = self.get_filter_form()
-        if form.is_valid():
+        if form.is_valid() and len(form.cleaned_data['status']) > 0:
             user_models = user_models.filter(status=form.cleaned_data['status'])
         if self.request.user != user:
             user_models = user_models.filter(hidden=False)
@@ -109,22 +109,33 @@ class WipUserModels(ListView):
     def get_context_data(self, *args, object_list=None, **kwargs):
         context = super().get_context_data(*args, **kwargs)
         user = self.get_user()
-        progress_list = ModelProgress.objects.filter(model__user=user, time__gt=0)
+
+        map_filter_year = datetime.date.today().year
+        map_filter_form = self.get_work_map_filter_form()
+        if map_filter_form.is_valid():
+            map_filter_year = map_filter_form.cleaned_data['work_map_year']
+        progress_list = ModelProgress.objects.filter(model__user=user, time__gt=0)\
+            .filter(datetime__year=map_filter_year)
         progress_by_date = {}
         for progress in progress_list:
             d = timezone.localtime(progress.datetime).date().strftime("%d-%m-%Y")
             if d not in progress_by_date.keys():
                 progress_by_date[d] = 0
             progress_by_date[d] += progress.time
-        date_map = build_map(progress_by_date)
-        sum_time_by_status = progress_list.filter(status__isnull=False).values("status").annotate(
-            total_time=Sum('time'))
-        status_map = [(Model.Status(x['status']).label, x['total_time']) for x in sum_time_by_status]
 
+        date_map = build_map(progress_by_date, map_filter_year)
+        sum_time_by_status = progress_list.filter(Q(status__isnull=False) &
+                                              (~Q(status__in=[Model.Status.IN_INVENTORY, Model.Status.WISHED])))\
+            .values("status")\
+            .annotate(total_time=Sum('time'))
+        sum_time_by_sorted_status = sorted(sum_time_by_status, key=lambda x: Model.Status.work_order().index(x['status']))
+        status_map = [(Model.Status(x['status']).label, x['total_time']) for x in sum_time_by_sorted_status]
+        status_map.append(('Итого', sum_time_by_status.aggregate(Sum('total_time'))['total_time__sum']))
+        status_map = [status_map[:5], status_map[5:]]
         return context | {
             'user': user,
             'filter_form': self.get_filter_form(),
-            'pagination_form': self.get_pagination_form(),
+            'work_map_filter_form': map_filter_form,
             'date_map': date_map,
             'time_status_map': status_map
         }
@@ -138,48 +149,13 @@ class WipUserModels(ListView):
     def get_filter_form(self):
         return ModelFilterForm(self.request.GET)
 
-    def get_pagination_form(self):
-        return PaginationForm(self.request.GET, initial={'page_size': self.get_paginate_by(self)})
+    def get_work_map_filter_form(self):
+        return WorkMapFilterForm(self.request.GET, initial={'work_map_year': datetime.date.today().year})
 
 
-
-def models(request, username):
-    users = User.objects.filter(username=username)
-    if not users.exists():
-        return Http404("Пользователь не найден")
-    user = users.first()
-    form = ModelFilterForm(request.GET)
-    olddate = timezone.now() - datetime.timedelta(days=2000)
-    user_models = Model.objects.annotate(last_record=Max('progress__datetime', default=olddate)) \
-        .filter(user__username=username) \
-        .order_by('-last_record', 'buy_date', 'created')
-    if form.is_valid():
-        user_models = user_models.filter(status=form.cleaned_data['status'])
-    if request.user != user:
-        user_models = user_models.filter(hidden=False)
-
-    progress_list = ModelProgress.objects.filter(model__user=user, time__gt=0)
-    progress_by_date = {}
-    for progress in progress_list:
-        d = timezone.localtime(progress.datetime).date().strftime("%d-%m-%Y")
-        if d not in progress_by_date.keys():
-            progress_by_date[d] = 0
-        progress_by_date[d] += progress.time
-    date_map = build_map(progress_by_date)
-    sum_time_by_status = progress_list.filter(status__isnull=False).values("status").annotate(total_time=Sum('time'))
-    status_map = [(Model.Status(x['status']).label, x['total_time']) for x in sum_time_by_status]
-    return render(request, 'wip/models.html', {
-        'models': user_models,
-        'user': user,
-        'filter_form': form,
-        'date_map': date_map,
-        'time_status_map': status_map
-    })
-
-
-def build_map(progress_by_date):
-    start = datetime.date(2024, 1, 1)
-    end = datetime.date(2024, 12, 31)
+def build_map(progress_by_date, year):
+    start = datetime.date(year, 1, 1)
+    end = datetime.date(year, 12, 31)
     date_map = []
     week = [(-50, -50, 0,)] * 7
     current_date = start

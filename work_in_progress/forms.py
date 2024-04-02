@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 
 from django import forms
 from django.core.exceptions import ValidationError
@@ -101,18 +101,24 @@ class RegistrationForm(forms.Form):
                                widget=forms.PasswordInput(attrs={"autocomplete": "current-password"}))
 
 
-class PaginationForm(forms.Form):
-    page_size = forms.ChoiceField(label="На странице", choices=((x, x) for x in [6, 12, 24, 900]))
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        page_size: forms.ChoiceField = self.fields['page_size']
-        if 'page_size' in self.initial:
-            value = list(filter(lambda x: x[0] == int(self.initial['page_size']), page_size.choices))
-            if len(value) > 0:
-                page_size.initial = value[0]
-
-
 class ModelFilterForm(forms.Form):
-    status = forms.ChoiceField(label="Статус", choices=(('', '----'), *Model.Status.choices))
+    status = forms.ChoiceField(label="Статус", choices=(('', '----'), *Model.Status.choices), required=False)
+    page_size = forms.ChoiceField(label="На странице", choices=((x, x) for x in [12, 24, 900]), required=False)
 
+
+YEAR_CHOICES = ((x, x) for x in range(date.today().year, 2021, -1))
+
+
+class WorkMapFilterForm(forms.Form):
+    work_map_year = forms.ChoiceField(label="Год",
+                                      choices=YEAR_CHOICES,
+                                      required=False)
+
+    def clean(self):
+        super().clean()
+        cleaned_data = self.cleaned_data
+        if 'work_map_year' in cleaned_data and len(cleaned_data['work_map_year']) > 0:
+            cleaned_data['work_map_year'] = int(cleaned_data['work_map_year'])
+        else:
+            cleaned_data['work_map_year'] = self.initial['work_map_year']
+        return cleaned_data

@@ -82,6 +82,18 @@ class Model(models.Model):
         VARNISHING = 'varnishing', 'Задуваю лаком'
         DONE = 'done', 'Закончено'
 
+        @staticmethod
+        def work_order():
+            return [
+                Model.Status.WISHED, Model.Status.IN_INVENTORY,
+                Model.Status.ASSEMBLING, Model.Status.ASSEMBLED,
+                Model.Status.PRIMING, Model.Status.PRIMED,
+                Model.Status.BATTLE_READY_PAINTING, Model.Status.BATTLE_READY_PAINTED,
+                Model.Status.PARADE_READY_PAINTING, Model.Status.PARADE_READY_PAINTED,
+                Model.Status.BASE_DECORATING, Model.Status.BASE_DECORATED,
+                Model.Status.VARNISHING, Model.Status.DONE,
+            ]
+
     name = models.CharField(verbose_name="Название модели", max_length=500)
     battlescribe_unit = models.ForeignKey(BSUnit, verbose_name="Из каталога BS", on_delete=models.RESTRICT, null=True)
     kill_team = models.ForeignKey('KillTeam', verbose_name="KillTeam каталога BS", on_delete=models.RESTRICT, null=True)
