@@ -131,6 +131,7 @@ docker run -d --name blog \
   -v /home/pi/Projects/blog:/var/lib/ghost/content \
   -p 8009:2368 \
   ghost:3-alpine
+HERE
 }
 
 while [ -n "$1" ]
