@@ -7,7 +7,7 @@
 <p>Потрачено всего:{{ total|duration }}</p>
 <a href="{% url 'wip:models' user.username %}">Назад</a>
 {% if request.user.is_authenticated and request.user == user %}
-<a href="{% url 'wip:add_progress' model.id %}">Добавить время</a>
+    <a href="{% url 'wip:add_progress' request.user.username model.id %}">Добавить время</a>
 {% endif %}
 <table class="celled ui table">
     <thead>
@@ -16,7 +16,7 @@
             <th>В статусе</th>
             <th>Заголовок</th>
             <th>Подробно</th>
-            <th>Часов</th>
+            <th>Время</th>
             <th>Картинки</th>
             <th></th>
         </tr>
@@ -48,10 +48,10 @@
             <td>
                 {% if request.user.is_authenticated and model.user == request.user %}
                 <div>
-                    <a class="item" href="{% url 'wip:edit_progress' model.id progress.id %}">Редактировать</a>
+                    <a class="item" href="{% url 'wip:edit_progress' request.user.username model.id progress.id %}">Редактировать</a>
                 </div>
                 <div style="margin-top: 20px" class="ui red label">
-                    <a class="item" href="{% url 'wip:delete_progress' model.id progress.id %}">Удалить</a>
+                    <a class="item" href="{% url 'wip:delete_progress' request.user.username model.id progress.id %}">Удалить</a>
                 </div>
                 {% endif %}
             </td>

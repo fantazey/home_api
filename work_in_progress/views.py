@@ -9,7 +9,7 @@ from django.http import Http404
 from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.utils import timezone
-from django.views.generic import ListView
+from django.views.generic import ListView, View
 from django.views.generic.edit import FormView
 
 from .forms import AddModelForm, LoginForm, AddProgressForm, RegistrationForm, EditModelForm, \
@@ -125,10 +125,11 @@ class WipUserModels(ListView):
 
         date_map = build_map(progress_by_date, map_filter_year)
         sum_time_by_status = progress_list.filter(Q(status__isnull=False) &
-                                              (~Q(status__in=[Model.Status.IN_INVENTORY, Model.Status.WISHED])))\
+                                                  (~Q(status__in=[Model.Status.IN_INVENTORY, Model.Status.WISHED])))\
             .values("status")\
             .annotate(total_time=Sum('time'))
-        sum_time_by_sorted_status = sorted(sum_time_by_status, key=lambda x: Model.Status.work_order().index(x['status']))
+        sum_time_by_sorted_status = sorted(sum_time_by_status,
+                                           key=lambda x: Model.Status.work_order().index(x['status']))
         status_map = [(Model.Status(x['status']).label, x['total_time']) for x in sum_time_by_sorted_status]
         status_map.append(('Итого', sum_time_by_status.aggregate(Sum('total_time'))['total_time__sum']))
         status_map = [status_map[:5], status_map[5:]]
@@ -176,50 +177,53 @@ def build_map(progress_by_date, year):
     return date_map
 
 
-@login_required(login_url='/wip/accounts/login')
-def add_model(request):
-    context = {
-        'title': 'Добавление модели в PileOfShame',
-        'submit_url': reverse('wip:add_model'),
-        'submit_label': 'Добавить'
-    }
-    if request.method == 'GET':
-        context['form'] = AddModelForm()
-        return render(request, 'wip/add_model.html', context)
+class WipModelCreate(FormView):
+    form_class = AddModelForm
+    template_name = 'wip/add_model.html'
 
-    form = AddModelForm(request.POST)
-    if not form.is_valid():
-        context['form'] = form
-        return render(request, 'wip/add_model.html', context)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Добавление модели в PileOfShame'
+        context['submit_url'] = reverse('wip:add_model')
+        context['submit_label'] = 'Добавить'
+        return context
 
-    name = form.cleaned_data['name']
-    model = Model(name=name,
-                  user=request.user,
-                  status=Model.Status.WISHED,
-                  battlescribe_unit=form.cleaned_data['bs_unit'],
-                  buy_date=form.cleaned_data['buy_date'],
-                  hidden=form.cleaned_data['hidden'])
+    def form_valid(self, form):
+        name = form.cleaned_data['name']
+        model = Model(name=name,
+                      user=self.request.user,
+                      status=Model.Status.WISHED,
+                      battlescribe_unit=form.cleaned_data['bs_unit'],
+                      buy_date=form.cleaned_data['buy_date'],
+                      hidden=form.cleaned_data['hidden'])
+        progress_title = "Захотелось новую модельку"
+        if form.cleaned_data['in_inventory']:
+            model.status = Model.Status.IN_INVENTORY
+            progress_title = "Куплено"
 
-    progress_title = "Захотелось новую модельку"
-    if form.cleaned_data['in_inventory']:
-        model.status = Model.Status.IN_INVENTORY
-        progress_title = "Куплено"
-
-    model.save()
-    progress = ModelProgress(datetime=datetime.datetime.now(), title=progress_title, model=model)
-    progress.save()
-    return redirect(reverse('wip:models', kwargs={'username': request.user.username}))
+        model.save()
+        progress = ModelProgress(datetime=datetime.datetime.now(), title=progress_title, model=model)
+        progress.save()
+        return redirect(reverse('wip:models', kwargs={'username': self.request.user.username}))
 
 
-@login_required(login_url='/wip/accounts/login')
-def edit_model(request, model_id):
-    model = Model.objects.get(id=model_id, user=request.user)
-    context = {
-        'title': 'Редактирование модели %s' % model,
-        'submit_url': reverse('wip:edit_model', kwargs={'model_id': model_id}),
-        'submit_label': 'Сохранить'
-    }
-    if request.method == 'GET':
+class WipModelUpdate(FormView):
+    form_class = EditModelForm
+    template_name = 'wip/edit_model.html'
+
+    def get_model(self):
+        return Model.objects.get(id=self.kwargs['model_id'], user=self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        model = self.get_model()
+        context['title'] = 'Редактирование модели %s' % model
+        context['submit_url'] = reverse('wip:edit_model', kwargs={'model_id': self.kwargs['model_id']})
+        context['submit_label'] = 'Сохранить'
+        return context
+
+    def get_initial(self):
+        model = self.get_model()
         initial = {
             'name': model.name,
             'buy_date': model.buy_date.strftime('%Y-%m-%d') if model.buy_date is not None else None,
@@ -228,27 +232,24 @@ def edit_model(request, model_id):
             'bs_category': model.battlescribe_unit.bs_category if model.battlescribe_unit is not None else None,
             'hidden': model.hidden
         }
-        context['form'] = EditModelForm(initial=initial)
-        return render(request, 'wip/edit_model.html', context)
-    form = EditModelForm(request.POST)
-    if not form.is_valid():
-        context['form'] = form
-        return render(request, 'wip/edit_model.html', context)
+        return initial
 
-    model.name = form.cleaned_data['name']
-    model.battlescribe_unit = form.cleaned_data['bs_unit']
-    model.buy_date = form.cleaned_data['buy_date']
-    if model.status != form.cleaned_data['status']:
-        progress = ModelProgress(model=model,
-                                 title="Смена статуса на: %s" % Model.Status(form.cleaned_data['status']).label,
-                                 time=0,
-                                 status=model.status,
-                                 datetime=datetime.datetime.now())
-        progress.save()
-    model.status = form.cleaned_data['status']
-    model.hidden = form.cleaned_data['hidden']
-    model.save()
-    return redirect(reverse('wip:models', kwargs={'username': request.user.username}))
+    def form_valid(self, form):
+        model = self.get_model()
+        model.name = form.cleaned_data['name']
+        model.battlescribe_unit = form.cleaned_data['bs_unit']
+        model.buy_date = form.cleaned_data['buy_date']
+        if model.status != form.cleaned_data['status']:
+            progress = ModelProgress(model=model,
+                                     title="Смена статуса на: %s" % Model.Status(form.cleaned_data['status']).label,
+                                     time=0,
+                                     status=model.status,
+                                     datetime=datetime.datetime.now())
+            progress.save()
+        model.status = form.cleaned_data['status']
+        model.hidden = form.cleaned_data['hidden']
+        model.save()
+        return redirect(reverse('wip:models', kwargs={'username': self.request.user.username}))
 
 
 @login_required(login_url='/wip/accounts/login')
@@ -262,131 +263,71 @@ def delete_model(request, model_id):
     return redirect(reverse('wip:models', kwargs={'username': request.user.username}))
 
 
-@login_required(login_url='/wip/accounts/login')
-def put_in_inventory(request, model_id):
-    model = Model.objects.get(id=model_id, user=request.user)
-    model.put_in_inventory()
-    return redirect(reverse('wip:models', kwargs={'username': request.user.username}))
+class WipModelStatusActions(View):
+
+    def get_model(self) -> Model:
+        return Model.objects.get(id=self.kwargs['model_id'], user=self.request.user)
+
+    def get(self, *args, **kwargs):
+        handler = getattr(self.get_model(), self.kwargs['status_action'])
+        if handler is not None:
+            handler()
+        return redirect(reverse('wip:models', kwargs={'username': self.request.user.username}))
 
 
-@login_required(login_url='/wip/accounts/login')
-def start_assembly(request, model_id):
-    model = Model.objects.get(id=model_id, user=request.user)
-    model.start_assembly()
-    return redirect(reverse('wip:models', kwargs={'username': request.user.username}))
+class WipModelProgress(ListView):
+    model = ModelProgress
+    context_object_name = 'progress_items'
+    template_name = 'wip/progress.html'
+
+    def get_user(self):
+        users = User.objects.filter(username=self.kwargs['username'])
+        if not users.exists():
+            return Http404("Пользователь не найден")
+        return users.first()
+
+    def get_model(self):
+        user = self.get_user()
+        return Model.objects.get(id=self.kwargs['model_id'], user=user)
+
+    def get_queryset(self):
+        progress_items = ModelProgress.objects.filter(model=self.get_model()).order_by('-datetime')
+        return progress_items
+
+    def get_context_data(self, *, object_list=None, **kwargs):
+        context = super().get_context_data(object_list=object_list, **kwargs)
+        context['total'] = context['progress_items'].aggregate(Sum('time'))['time__sum']
+        context['model'] = self.get_model()
+        context['user'] = self.get_user()
+        return context
 
 
-@login_required(login_url='/wip/accounts/login')
-def finish_assembly(request, model_id):
-    model = Model.objects.get(id=model_id, user=request.user)
-    model.finish_assembly()
-    return redirect(reverse('wip:models', kwargs={'username': request.user.username}))
+class WipModelProgressCreate(FormView):
+    template_name = 'wip/edit_progress.html'
+    form_class = AddProgressForm
 
+    def get_user(self):
+        return self.request.user
 
-@login_required(login_url='/wip/accounts/login')
-def start_priming(request, model_id):
-    model = Model.objects.get(id=model_id, user=request.user)
-    model.start_priming()
-    return redirect(reverse('wip:models', kwargs={'username': request.user.username}))
+    def get_model(self) -> Model:
+        return Model.objects.get(id=self.kwargs['model_id'], user=self.get_user())
 
+    def get_context_data(self, **kwargs):
+        model = self.get_model()
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Добавление прогресса для модели %s' % model
+        context['model'] = model
+        context['submit_url'] = reverse('wip:add_progress', kwargs={
+            'username': self.get_user().username,
+            'model_id': model.id})
+        context['button_label'] = 'Добавить'
+        return context
 
-@login_required(login_url='/wip/accounts/login')
-def finish_priming(request, model_id):
-    model = Model.objects.get(id=model_id, user=request.user)
-    model.finish_priming()
-    return redirect(reverse('wip:models', kwargs={'username': request.user.username}))
+    def get_initial(self):
+        return {'status': self.get_model().status}
 
-
-@login_required(login_url='/wip/accounts/login')
-def start_painting(request, model_id):
-    model = Model.objects.get(id=model_id, user=request.user)
-    model.start_painting()
-    return redirect(reverse('wip:models', kwargs={'username': request.user.username}))
-
-
-@login_required(login_url='/wip/accounts/login')
-def finish_painting(request, model_id):
-    model = Model.objects.get(id=model_id, user=request.user)
-    model.finish_painting()
-    return redirect(reverse('wip:models', kwargs={'username': request.user.username}))
-
-
-@login_required(login_url='/wip/accounts/login')
-def start_parade_ready_painting(request, model_id):
-    model = Model.objects.get(id=model_id, user=request.user)
-    model.start_parade_ready_painting()
-    return redirect(reverse('wip:models', kwargs={'username': request.user.username}))
-
-
-@login_required(login_url='/wip/accounts/login')
-def finish_parade_ready_painting(request, model_id):
-    model = Model.objects.get(id=model_id, user=request.user)
-    model.finish_parade_ready_painting()
-    return redirect(reverse('wip:models', kwargs={'username': request.user.username}))
-
-
-@login_required(login_url='/wip/accounts/login')
-def start_base_decoration(request, model_id):
-    model = Model.objects.get(id=model_id, user=request.user)
-    model.start_base_decoration()
-    return redirect(reverse('wip:models', kwargs={'username': request.user.username}))
-
-
-@login_required(login_url='/wip/accounts/login')
-def finish_base_decoration(request, model_id):
-    model = Model.objects.get(id=model_id, user=request.user)
-    model.finish_base_decoration()
-    return redirect(reverse('wip:models', kwargs={'username': request.user.username}))
-
-
-@login_required(login_url='/wip/accounts/login')
-def start_varnishing(request, model_id):
-    model = Model.objects.get(id=model_id, user=request.user)
-    model.start_varnishing()
-    return redirect(reverse('wip:models', kwargs={'username': request.user.username}))
-
-
-@login_required(login_url='/wip/accounts/login')
-def finish_varnishing(request, model_id):
-    model = Model.objects.get(id=model_id, user=request.user)
-    model.finish_varnishing()
-    return redirect(reverse('wip:models', kwargs={'username': request.user.username}))
-
-
-def view_progress(request, username, model_id):
-    users = User.objects.filter(username=username)
-    if not users.exists():
-        return Http404("Пользователь не найден")
-    user = users.first()
-    model = Model.objects.get(id=model_id, user=user)
-    progress_items = ModelProgress.objects.filter(model=model).order_by('-datetime')
-    total = progress_items.aggregate(Sum('time'))
-    return render(request, 'wip/progress.html', {
-        'model': model,
-        'user': user,
-        'total': total['time__sum'],
-        'progress_items': progress_items
-    })
-
-
-@login_required(login_url='/wip/accounts/login')
-def add_progress(request, model_id):
-    model = Model.objects.get(id=model_id, user=request.user)
-    context = {
-        'title': 'Добавление прогресса для модели %s' % model,
-        'model': model,
-        'submit_url': reverse('wip:add_progress', kwargs={'model_id': model.id}),
-        'button_label': 'Добавить'
-    }
-    if request.method == 'GET':
-        initial = {
-            'status': model.status,
-        }
-        context['form'] = AddProgressForm(initial=initial)
-        return render(request, 'wip/edit_progress.html', context)
-
-    form = AddProgressForm(request.POST, request.FILES)
-    if form.is_valid():
+    def form_valid(self, form):
+        model = self.get_model()
         progress = ModelProgress(model=model,
                                  title=form.cleaned_data['title'],
                                  description=form.cleaned_data['description'],
@@ -394,25 +335,18 @@ def add_progress(request, model_id):
                                  status=form.cleaned_data['status'],
                                  datetime=form.cleaned_data['date'])
         progress.save()
-        progress.add_images(request.FILES.getlist('images'))
+        progress.add_images(self.request.FILES.getlist('images'))
         return redirect(reverse('wip:progress', args=(model.user.username, model.id,)))
 
-    context['form'] = form
-    return render(request, 'wip/edit_progress.html', context)
 
+class WipModelProgressUpdate(WipModelProgressCreate):
 
-@login_required(login_url='/wip/accounts/login')
-def edit_progress(request, model_id, progress_id):
-    model = Model.objects.get(id=model_id, user=request.user)
-    progress = ModelProgress.objects.get(id=progress_id, model=model)
-    context = {
-        'title': 'Редактирование записи покраса %s для модели %s' % (progress, model),
-        'model': model,
-        'submit_url': reverse('wip:edit_progress', kwargs={'model_id': model.id, 'progress_id': progress.id}),
-        'button_label': 'Сохранить'
-    }
-    if request.method == 'GET':
-        initial = {
+    def get_progress(self):
+        return ModelProgress.objects.get(id=self.kwargs['progress_id'], model=self.get_model())
+
+    def get_initial(self):
+        progress = self.get_progress()
+        return {
             'title': progress.title,
             'description': progress.description,
             'date': progress.datetime,
@@ -420,23 +354,32 @@ def edit_progress(request, model_id, progress_id):
             'status': progress.status,
             'images': progress.modelimage_set.values('image')
         }
-        context['form'] = AddProgressForm(initial=initial)
-        return render(request, 'wip/edit_progress.html', context)
-    form = AddProgressForm(request.POST, request.FILES)
-    if form.is_valid():
+
+    def get_context_data(self, **kwargs):
+        model = self.get_model()
+        progress = self.get_progress()
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Редактирование записи покраса %s для модели %s' % (progress, model)
+        context['submit_url'] = reverse('wip:edit_progress', kwargs={
+            'username': self.request.user.username,
+            'model_id': model.id,
+            'progress_id': progress.id})
+        return context
+
+    def form_valid(self, form):
+        model = self.get_model()
+        progress = self.get_progress()
         progress.title = form.cleaned_data['title']
         progress.description = form.cleaned_data['description']
         progress.time = form.cleaned_data['time']
         progress.datetime = form.cleaned_data['date']
         progress.status = form.cleaned_data['status']
         progress.save()
-        progress.add_images(request.FILES.getlist('images'))
+        progress.add_images(self.request.FILES.getlist('images'))
         return redirect(reverse('wip:progress', args=(model.user.username, model.id,)))
-    context['form'] = form
-    return render(request, 'wip/edit_progress.html', context)
 
 
-@login_required()
+@login_required(login_url='/wip/accounts/login')
 def delete_progress(request, model_id, progress_id):
     model = Model.objects.get(id=model_id, user=request.user)
     progress = ModelProgress.objects.get(id=progress_id, model=model)
