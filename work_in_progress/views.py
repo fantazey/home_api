@@ -81,8 +81,8 @@ class WipIndexView(ListView):
 
     def get_queryset(self):
         return Model.objects.annotate(last_record=Max('progress__datetime')). \
-                     filter(hidden=False). \
-                     order_by('-last_record')
+            filter(hidden=False). \
+            order_by('-last_record')
 
 
 class WipUserModels(ListView):
@@ -114,7 +114,7 @@ class WipUserModels(ListView):
         map_filter_form = self.get_work_map_filter_form()
         if map_filter_form.is_valid():
             map_filter_year = map_filter_form.cleaned_data['work_map_year']
-        progress_list = ModelProgress.objects.filter(model__user=user, time__gt=0)\
+        progress_list = ModelProgress.objects.filter(model__user=user, time__gt=0) \
             .filter(datetime__year=map_filter_year)
         progress_by_date = {}
         for progress in progress_list:
@@ -125,11 +125,19 @@ class WipUserModels(ListView):
 
         date_map = build_map(progress_by_date, map_filter_year)
         sum_time_by_status = progress_list.filter(Q(status__isnull=False) &
-                                                  (~Q(status__in=[Model.Status.IN_INVENTORY, Model.Status.WISHED])))\
-            .values("status")\
+                                                  (~Q(status__in=[Model.Status.IN_INVENTORY, Model.Status.WISHED]))) \
+            .values("status") \
             .annotate(total_time=Sum('time'))
         sum_time_by_sorted_status = sorted(sum_time_by_status,
                                            key=lambda x: Model.Status.work_order().index(x['status']))
+        user_models = Model.objects.filter(user=user)
+        painted_status_query = Q(status__in=[Model.Status.DONE, Model.Status.VARNISHING, Model.Status.BASE_DECORATED])
+        in_inventory_status_query = Q(status=Model.Status.IN_INVENTORY)
+        units_painted = user_models.filter(painted_status_query).aggregate(Sum('unit_count'))['unit_count__sum']
+        units_unpainted = user_models.filter(~painted_status_query & ~in_inventory_status_query) \
+                              .aggregate(Sum('unit_count'))['unit_count__sum']
+        units_unassembled = user_models.filter(in_inventory_status_query) \
+            .aggregate(Sum('unit_count'))['unit_count__sum']
         status_map = [(Model.Status(x['status']).label, x['total_time']) for x in sum_time_by_sorted_status]
         status_map.append(('Итого', sum_time_by_status.aggregate(Sum('total_time'))['total_time__sum']))
         status_map = [status_map[:5], status_map[5:]]
@@ -138,7 +146,10 @@ class WipUserModels(ListView):
             'filter_form': self.get_filter_form(),
             'work_map_filter_form': map_filter_form,
             'date_map': date_map,
-            'time_status_map': status_map
+            'time_status_map': status_map,
+            'units_painted': units_painted,
+            'units_unpainted': units_unpainted,
+            'units_unassembled': units_unassembled
         }
 
     def get_user(self) -> User:

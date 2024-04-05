@@ -39,13 +39,15 @@ $(function() {
     Модели пользователя {{ user.username }}
 </h2>
 <div class="ui grid relaxed">
+    <div class="six wide column">
+        {% include 'wip/widgets/progress_map.html' %}
+    </div>
     <div class="two wide column">
         {{ work_map_filter_form.as_p }}
         <a id="submit_work_map_filter">Применить</a>
     </div>
-    <div class="six wide column">
-        {% include 'wip/widgets/progress_map.html' %}
-    </div>
+</div>
+<div class="ui grid relaxed">
     {% for col in time_status_map %}
         <div class="three wide column">
         {% for item in col %}
@@ -53,7 +55,11 @@ $(function() {
         {% endfor %}
         </div>
     {% endfor %}
-    <div class="column"></div>
+    <div class="two wide column">
+        <div>Покрашено - {{ units_painted }}</div>
+        <div>Не покрашено - {{ units_unpainted }}</div>
+        <div>Не собрано - {{ units_unassembled }}</div>
+    </div>
 </div>
 <div class="ui grid relaxed form ui">
     <div class="three wide column">
