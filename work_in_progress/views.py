@@ -179,7 +179,7 @@ def build_map(progress_by_date, year):
 
 class WipModelCreate(FormView):
     form_class = AddModelForm
-    template_name = 'wip/add_model.html'
+    template_name = 'wip/model_add.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -209,7 +209,7 @@ class WipModelCreate(FormView):
 
 class WipModelUpdate(FormView):
     form_class = EditModelForm
-    template_name = 'wip/edit_model.html'
+    template_name = 'wip/model_edit.html'
 
     def get_model(self):
         return Model.objects.get(id=self.kwargs['model_id'], user=self.request.user)
@@ -303,7 +303,7 @@ class WipModelProgress(ListView):
 
 
 class WipModelProgressCreate(FormView):
-    template_name = 'wip/edit_progress.html'
+    template_name = 'wip/progress_form.html'
     form_class = AddProgressForm
 
     def get_user(self):
@@ -320,7 +320,7 @@ class WipModelProgressCreate(FormView):
         context['submit_url'] = reverse('wip:add_progress', kwargs={
             'username': self.get_user().username,
             'model_id': model.id})
-        context['button_label'] = 'Добавить'
+        context['submit_label'] = 'Добавить'
         return context
 
     def get_initial(self):
@@ -360,6 +360,7 @@ class WipModelProgressUpdate(WipModelProgressCreate):
         progress = self.get_progress()
         context = super().get_context_data(**kwargs)
         context['title'] = 'Редактирование записи покраса %s для модели %s' % (progress, model)
+        context['submit_label'] = 'Сохранить'
         context['submit_url'] = reverse('wip:edit_progress', kwargs={
             'username': self.request.user.username,
             'model_id': model.id,

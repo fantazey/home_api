@@ -1,0 +1,12 @@
+{% extends 'wip/model_form.html' %}
+{% block form_fields %}
+    {% include 'wip/widgets/form-field.html' with field=form.bs_category %}
+    {% include 'wip/widgets/form-field.html' with field=form.bs_unit %}
+    {% include 'wip/widgets/form-field.html' with field=form.name %}
+    {% include 'wip/widgets/form-field.html' with field=form.in_inventory %}
+    <div id="buy-date-field" class="field disabled hidden">
+        <label>{{ form.buy_date.label }}</label>
+        {{ form.buy_date }}
+    </div>
+    {% include 'wip/widgets/form-field.html' with field=form.hidden %}
+{% endblock form_fields %}

@@ -1,0 +1,25 @@
+{% extends 'wip/base.html' %}
+{% block content %}
+<h2>
+    {{ title }}
+</h2>
+{% block back_link %}
+{% endblock back_link %}
+<div class="ui five column doubling stackable grid container">
+    <div class="column"></div>
+    <div class="column">
+        <form action="{{ submit_url }}" class="ui form" method="post">
+            {% csrf_token %}
+            {% block form_fields %}
+            {% endblock form_fields %}
+            <div class="field">
+                <button class="ui button" type="submit">{{ submit_label }}</button>
+            </div>
+        </form>
+    </div>
+    <div class="column"></div>
+    <div class="column"></div>
+</div>
+{% block script %}
+{% endblock script %}
+{% endblock content %}

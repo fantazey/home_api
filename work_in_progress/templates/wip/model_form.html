@@ -1,31 +1,8 @@
-{% extends 'wip/base.html' %}
-{% block content %}
-<h2>
-    {{ title }}
-</h2>
+{% extends 'wip/base_form.html' %}
+{% block back_link %}
 <a href="{% url 'wip:models' request.user.username %}">Назад</a>
-<div class="ui five column doubling stackable grid container">
-    <div class="column"></div>
-    <div class="column">
-        <form action="{{ submit_url }}" class="ui form" method="post">
-        {% csrf_token %}
-            {% include 'wip/widgets/form-field.html' with field=form.bs_category %}
-            {% include 'wip/widgets/form-field.html' with field=form.bs_unit %}
-            {% include 'wip/widgets/form-field.html' with field=form.name %}
-            {% include 'wip/widgets/form-field.html' with field=form.in_inventory %}
-            <div id="buy-date-field" class="field disabled hidden">
-                <label>{{ form.buy_date.label }}</label>
-                {{ form.buy_date }}
-            </div>
-            {% include 'wip/widgets/form-field.html' with field=form.hidden %}
-            <div class="field">
-                <button class="ui button" type="submit">{{ submit_label }}</button>
-            </div>
-        </form>
-    </div>
-    <div class="column"></div>
-    <div class="column"></div>
-</div>
+{% endblock back_link %}
+{% block script %}
 <script>
 $('#id_in_inventory').click(function() {
     if (document.querySelector('#id_in_inventory').checked) {
@@ -78,4 +55,4 @@ function onChangeUnit(event) {
 }
 
 </script>
-{% endblock %}
+{% endblock script %}

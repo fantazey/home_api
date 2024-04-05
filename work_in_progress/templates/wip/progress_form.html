@@ -1,0 +1,12 @@
+{% extends 'wip/base_form.html' %}
+{% block back_link %}
+<a href="{% url 'wip:progress' user.username model.id %}">Назад</a>
+{% endblock back_link %}
+{% block form_fields %}
+{% include 'wip/widgets/form-field.html' with field=form.title %}
+{% include 'wip/widgets/form-field.html' with field=form.description %}
+{% include 'wip/widgets/form-field.html' with field=form.date %}
+{% include 'wip/widgets/form-field.html' with field=form.time %}
+{% include 'wip/widgets/form-field.html' with field=form.status %}
+{% include 'wip/widgets/form-field.html' with field=form.images %}
+{% endblock form_fields %}
