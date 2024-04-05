@@ -7,6 +7,7 @@
 <table class="celled ui table" style="margin-bottom: 10px">
 <thead>
     <tr>
+        <th>Юзер</th>
         <th>Название</th>
         <th>Данные BS</th>
         <th>Статус</th>
@@ -17,6 +18,7 @@
 <tbody>
     {% for model in models %}
         <tr>
+            <td><a href="{% url 'wip:models' model.user.username %}">{{ model.user.username }}</a></td>
             <td>
                 {{ model.name }}
                 {% if model.get_last_image_url %}

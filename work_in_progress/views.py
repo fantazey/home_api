@@ -80,7 +80,8 @@ class WipIndexView(ListView):
     context_object_name = 'models'
 
     def get_queryset(self):
-        return Model.objects.annotate(last_record=Max('progress__datetime')). \
+        old_date = timezone.now() - datetime.timedelta(days=2000)
+        return Model.objects.annotate(last_record=Max('progress__datetime', default=old_date)). \
             filter(hidden=False). \
             order_by('-last_record')
 
