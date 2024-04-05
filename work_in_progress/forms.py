@@ -51,6 +51,7 @@ class AddModelForm(forms.Form):
                                 queryset=BSUnit.objects.all(),
                                 widget=forms.Select(attrs={'class': 'ui fluid search selection dropdown'}),
                                 required=False)
+    count = forms.IntegerField(label="Количество миниатюр", required=False, initial=1)
 
 
 class EditModelForm(forms.Form):
@@ -71,6 +72,7 @@ class EditModelForm(forms.Form):
                               widget=forms.ClearableFileInput(attrs={'multiple': True}),
                               required=False)
     hidden = forms.BooleanField(label="Скрыть", required=False, initial=False)
+    count = forms.IntegerField(label="Количество миниатюр", required=False, initial=1)
 
 
 class AddProgressForm(forms.Form):

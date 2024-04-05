@@ -138,6 +138,7 @@ class WipUserModels(ListView):
                               .aggregate(Sum('unit_count'))['unit_count__sum']
         units_unassembled = user_models.filter(in_inventory_status_query) \
             .aggregate(Sum('unit_count'))['unit_count__sum']
+        units_to_buy = user_models.filter(Q(status=Model.Status.WISHED)).aggregate(Sum('unit_count'))['unit_count__sum']
         status_map = [(Model.Status(x['status']).label, x['total_time']) for x in sum_time_by_sorted_status]
         status_map.append(('Итого', sum_time_by_status.aggregate(Sum('total_time'))['total_time__sum']))
         status_map = [status_map[:5], status_map[5:]]
@@ -149,7 +150,8 @@ class WipUserModels(ListView):
             'time_status_map': status_map,
             'units_painted': units_painted,
             'units_unpainted': units_unpainted,
-            'units_unassembled': units_unassembled
+            'units_unassembled': units_unassembled,
+            'units_to_buy': units_to_buy
         }
 
     def get_user(self) -> User:
@@ -206,7 +208,8 @@ class WipModelCreate(FormView):
                       status=Model.Status.WISHED,
                       battlescribe_unit=form.cleaned_data['bs_unit'],
                       buy_date=form.cleaned_data['buy_date'],
-                      hidden=form.cleaned_data['hidden'])
+                      hidden=form.cleaned_data['hidden'],
+                      unit_count=form.cleaned_data['count'])
         progress_title = "Захотелось новую модельку"
         if form.cleaned_data['in_inventory']:
             model.status = Model.Status.IN_INVENTORY
@@ -222,7 +225,7 @@ class WipModelUpdate(FormView):
     form_class = EditModelForm
     template_name = 'wip/model_edit.html'
 
-    def get_model(self):
+    def get_model(self) -> Model:
         return Model.objects.get(id=self.kwargs['model_id'], user=self.request.user)
 
     def get_context_data(self, **kwargs):
@@ -241,7 +244,8 @@ class WipModelUpdate(FormView):
             'bs_unit': model.battlescribe_unit,
             'status': model.status,
             'bs_category': model.battlescribe_unit.bs_category if model.battlescribe_unit is not None else None,
-            'hidden': model.hidden
+            'hidden': model.hidden,
+            'count': model.unit_count
         }
         return initial
 
@@ -259,6 +263,7 @@ class WipModelUpdate(FormView):
             progress.save()
         model.status = form.cleaned_data['status']
         model.hidden = form.cleaned_data['hidden']
+        model.unit_count = form.cleaned_data['count']
         model.save()
         return redirect(reverse('wip:models', kwargs={'username': self.request.user.username}))
 
