@@ -1,0 +1,60 @@
+{% extends 'wip/base.html' %}
+{% load static %}
+{% block content %}
+{% if request.user.is_authenticated %}
+    <a href="{% url 'wip:inventory_manage' %}">Управление</a>
+{% endif %}
+<div>фильры</div>
+<div class="ui cards" style="margin-bottom: 10px">
+    {% for item in items %}
+        <div class="ui card">
+            {% if item.paint.color %}
+                <div class="ui image" style="cursor: pointer;">
+                    <div style="display:inline-block; width:100%;height: 64px; border: 1px solid black;background-color: {{ item.paint.color }}" ></div>
+                </div>
+            {% else %}
+                <div class="ui image" style="cursor: pointer;">
+                    <div style="display:inline-block; width:100%;height: 64px; border: 1px solid black;background-color: #7d7d7d" ></div>
+                </div>
+            {% endif %}
+            <div class="content">
+                <div class="header">
+                    {{ item.paint.vendor.name }} {{ item.paint.name }}
+                </div>
+                <div class="meta">
+                    {% if item.paint.type %}
+                        <span>Тип: {{ item.paint.type }}</span>
+                    {% endif %}
+                    {% if item.paint.details %}
+                        <span>Детали: {{ item.paint.details }}</span>
+                    {% endif %}
+                    {% if item.paint.color %}
+                        <span>Цвет: {{ item.paint.color }}</span>
+                    {% endif %}
+                </div>
+                <div class="extra content">
+                    {% if item.has %}<span><i class="ui icon box"></i>Есть</span>{% endif %}
+                    {% if item.wish %}<span><i class="ui icon shop"></i>Нужна</span>{% endif %}
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+    <div>
+        <p>{{ item.paint.vendor.name }}</p>
+        <p>{{ item.paint.name }}</p>
+        {% if item.paint.type %}
+            <p>{{ item.paint.type }}</p>
+        {% endif %}
+        {% if item.paint.details %}
+            <p>{{ item.paint.details }}</p>
+        {% endif %}
+        {% if item.paint.color %}
+            <p>{{ item.paint.color }}</p>
+        {% endif %}
+        <p>{% if item.has %}Есть{% endif %}</p>
+        <p>{% if item.wish %}Нужна{% endif %}</p>
+    </div>
+
+{% endblock content %}

@@ -1,5 +1,6 @@
 from math import trunc
 from django import template
+from django.forms import Form
 
 register = template.Library()
 
@@ -22,3 +23,8 @@ def param_replace(context, **kwargs):
     for k in [k for k, v in query.items() if not v]:
         del query[k]
     return query.urlencode()
+
+
+@register.filter(name="get_field")
+def get_field(form: Form, field_name: str):
+    return form.fields[field_name].get_bound_field(form, field_name)

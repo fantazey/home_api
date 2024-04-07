@@ -12,7 +12,6 @@
         <th>Данные BS</th>
         <th>Статус</th>
         <th>Дней в ящике/Часов потрачено</th>
-        <th>Детали</th>
     </tr>
 </thead>
 <tbody>
@@ -20,7 +19,7 @@
         <tr>
             <td><a href="{% url 'wip:models' model.user.username %}">{{ model.user.username }}</a></td>
             <td>
-                {{ model.name }}
+                <a href="{% url 'wip:progress' model.user.username model.id %}"> {{ model.name }}</a>
                 {% if model.get_last_image_url %}
                     {% include 'wip/widgets/model_image.html' %}
                 {% endif %}
@@ -40,11 +39,6 @@
                         <p>потрачено {{ model.get_hours_spent|duration }}</p>
                     {% endif %}
                 {% endif %}
-            </td>
-            <td>
-                <div>
-                    <a href="{% url 'wip:progress' model.user.username model.id %}">Подробнее</a>
-                </div>
             </td>
         </tr>
     {% endfor %}

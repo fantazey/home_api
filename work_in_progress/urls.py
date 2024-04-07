@@ -1,6 +1,8 @@
 from django.contrib.auth.decorators import login_required
-from django.urls import path
+from django.urls import path, reverse_lazy
 from . import views
+
+LOGIN_URL = reverse_lazy('wip:login')
 
 app_name = 'wip'
 urlpatterns = [
@@ -12,13 +14,20 @@ urlpatterns = [
 
     # index
     path('', views.WipIndexView.as_view(), name='index'),
+    # inventory
+    path('inventory',
+         login_required(views.WipUserInventory.as_view(), login_url='/wip/accounts/login'),
+         name='inventory'),
+    path('inventory/manage',
+         login_required(views.WipUserInventoryManage.as_view(), login_url='/wip/accounts/login'),
+         name='inventory_manage'),
     # model
     path('<str:username>/model', views.WipUserModels.as_view(), name='models'),
     path('model/add',
-         login_required(views.WipModelCreate.as_view(), login_url='/wip/accounts/login'),
+         login_required(views.WipModelCreate.as_view(), login_url=LOGIN_URL),
          name='add_model'),
     path('model/<int:model_id>/edit',
-         login_required(views.WipModelUpdate.as_view(), login_url='/wip/accounts/login'),
+         login_required(views.WipModelUpdate.as_view(), login_url=LOGIN_URL),
          name='edit_model'),
     path('model/<int:model_id>/delete', views.delete_model, name='delete_model'),
 

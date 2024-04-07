@@ -13,8 +13,8 @@ from django.views.generic import ListView, View
 from django.views.generic.edit import FormView
 
 from .forms import AddModelForm, LoginForm, AddProgressForm, RegistrationForm, EditModelForm, \
-    ModelFilterForm, WorkMapFilterForm
-from .models import Model, ModelProgress, ModelImage, Artist
+    ModelFilterForm, WorkMapFilterForm, PaintInventoryManageForm
+from .models import Model, ModelProgress, ModelImage, Artist, PaintInventory, Paint, PaintVendor
 
 
 class WipLoginView(LoginView):
@@ -406,3 +406,54 @@ def delete_progress(request, model_id, progress_id):
     model = progress.model
     progress.delete()
     return redirect(reverse('wip:progress', args=(model.user.username, model.id,)))
+
+
+class WipUserInventory(ListView):
+    model = PaintInventory
+    template_name = 'wip/inventory.html'
+    context_object_name = 'items'
+
+    def get_queryset(self):
+        return PaintInventory.objects.filter(user=self.request.user)\
+            .order_by('paint__vendor__name', 'paint__type', 'paint__name')
+
+
+class WipUserInventoryManage(FormView):
+    form_class = PaintInventoryManageForm
+    template_name = 'wip/inventory_manage.html'
+
+    def get_form(self, form_class=None):
+        return self.form_class(self.request.user, **self.get_form_kwargs())
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['vendors'] = PaintVendor.objects.all().values('id', 'name')
+        paint_by_vendor = {}
+        for vendor in context['vendors']:
+            paint_by_vendor[vendor['name']] = []
+            for paint in Paint.objects.filter(vendor_id=vendor['id']):
+                paint_by_vendor[vendor['name']].append({'id': paint.id, 'name': str(paint)})
+        context['paint_by_vendor'] = paint_by_vendor
+        return context
+
+    def form_valid(self, form):
+        cd = form.cleaned_data
+        inventory = []
+        paints_has = cd['has']
+        existed_inventory = PaintInventory.objects.filter(Q(has=True) & Q(user=self.request.user))
+        existed_paints = list(map(lambda x: x.paint, existed_inventory.filter(Q(paint__in=paints_has))))
+        to_delete = existed_inventory.filter(~Q(paint__in=paints_has))
+        to_save = list(filter(lambda x: x not in existed_paints, paints_has))  # list(set(a) - set(b))
+        to_delete.delete()
+        for paint in to_save:
+            inventory.append(PaintInventory(user=self.request.user, paint=paint, has=True))
+        paints_wish = cd['wish']
+        existed_inventory = PaintInventory.objects.filter(Q(wish=True) & Q(user=self.request.user))
+        existed_paints = list(map(lambda x: x.paint, existed_inventory.filter(Q(paint__in=paints_wish))))
+        to_delete = existed_inventory.filter(~Q(paint__in=paints_wish))
+        to_save = list(filter(lambda x: x not in existed_paints, paints_wish))  # list(set(a) - set(b))
+        to_delete.delete()
+        for paint in to_save:
+            inventory.append(PaintInventory(user=self.request.user, paint=paint, wish=True))
+        PaintInventory.objects.bulk_create(inventory)
+        return redirect(reverse('wip:inventory'))

@@ -1,0 +1,89 @@
+{% extends 'wip/base.html' %}
+{% load static %}
+{% load wip_filters %}
+{% block content %}
+    <script>
+        const vendors = [{% for vendor in vendors %}{id: {{vendor.id}}, name: '{{ vendor.name }}'},{% endfor %}];
+        $(document).ready(function() {
+            $('form').submit(e => {
+                vendors.forEach(vendor => {
+                    const vendorId = vendor['id'];
+                    $('#id_paints_has_from_vendor_' + vendorId).find('option').prop('selected', true);
+                    $('#id_paints_wish_from_vendor_' + vendorId).find('option').prop('selected', true);
+                    {#$('option').prop('selected', true);#}
+                })
+                {#$('option').prop('selected', true);#}
+                return true;
+            })
+            vendors.forEach(vendor => {
+                const vendorId = vendor['id'];
+                const $vendorPaints = $('#id_paints_' + vendorId);
+                const $addToHas = $('#add_to_has_' + vendorId);
+                const $addToWish = $('#add_to_wish_' + vendorId);
+                const $deleteFromHas = $('#delete_from_has_' + vendorId);
+                const $deleteFromWish = $('#delete_from_wish_' + vendorId);
+                const $hasList = $('#id_paints_has_from_vendor_' + vendorId);
+                const $wishList = $('#id_paints_wish_from_vendor_' + vendorId);
+                $addToHas.click(e => {
+                    e.preventDefault();
+                    const idList = $vendorPaints.val();
+                    const options = $vendorPaints.find('option').filter((i, el) => idList.includes($(el).attr('value')));
+                    options.each((i,option) => $(option).clone().appendTo($hasList));
+                })
+                $addToWish.click(e => {
+                    e.preventDefault();
+                    const idList = $vendorPaints.val();
+                    const options = $vendorPaints.find('option').filter((i, el) => idList.includes($(el).attr('value')));
+                    options.map((i, option) => $(option).clone().appendTo($wishList));
+                })
+                $deleteFromHas.click(e => {
+                    const idList = $hasList.val();
+                    $hasList.find('option').each((i, option) => {
+                       if (idList.includes($(option).attr('value'))) {
+                           $(option).remove();
+                       }
+                    });
+                })
+                $deleteFromWish.click(e => {
+                    const idList = $wishList.val();
+                    $wishList.find('option').each((i, option) => {
+                       if (idList.includes($(option).attr('value'))) {
+                           $(option).remove();
+                       }
+                    });
+                })
+            });
+        });
+    </script>
+    <form action="" name="{{ form.name }}" method="post">
+        <div class="field">
+            <button id="submit" class="ui button" type="submit">Сохранить</button>
+        </div>
+        {% csrf_token %}
+        {% for vendor in form.vendors %}
+            <div>
+                <h2>Краски {{ vendor.1 }}</h2>
+                {{ form|get_field:vendor.2 }}
+                <div id="add_to_has_{{ vendor.0 }}" class="ui button add_to_has" data-vendor="{{ vendor.0 }}">
+                    Купил
+                    <i class="ui icon right arrow"></i>
+                </div>
+                <div id="delete_from_has_{{ vendor.0 }}" class="ui button add_to_has" data-vendor="{{ vendor.0 }}">
+                    Убрать
+                    <i class="ui icon trash"></i>
+                </div>
+                {{ form|get_field:vendor.3 }}
+                <div id="add_to_wish_{{ vendor.0 }}" class="ui button add_to_wish" data-vendor="{{ vendor.0 }}">
+                    Хочу
+                    <i class="ui icon right arrow"></i>
+                </div>
+                <div id="delete_from_wish_{{ vendor.0 }}" class="ui button add_to_wish" data-vendor="{{ vendor.0 }}">
+                    Убрать
+                    <i class="ui icon trash"></i>
+                </div>
+                {{ form|get_field:vendor.4 }}
+            </div>
+        {% endfor %}
+    </form>
+
+{% endblock content %}

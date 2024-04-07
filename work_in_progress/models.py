@@ -10,7 +10,8 @@ from home_api.settings import DEBUG
 
 """
 модуль кт:
-1) список юнитов + оружие к ним + парсинг правил, у каждого юнита имя + профессия, в боте список оперативников из тимы, по выбору оперативника его характеристики, отдельная кнопка на аппендикс со спец правилами оружия
+1) список юнитов + оружие к ним + парсинг правил, у каждого юнита имя + профессия, в боте список оперативников из тимы, 
+по выбору оперативника его характеристики, отдельная кнопка на аппендикс со спец правилами оружия
 2) список уловок тактических - распарсить
 3) список уловок стратегических - распарсить
 4) шедулер на обновление данных батл скрайба из экселя и хранение этих данных в базе
@@ -302,22 +303,24 @@ class Paint(models.Model):
                              blank=True)
 
     def __str__(self):
-        return "%s %s - %s" % (self.vendor, self.type, self.name)
+        if self.details:
+            return "[%s] %s [%s]" % (self.details, self.name, self.type)
+        return "%s [%s]" % (self.name, self.type)
 
     class Meta:
-        ordering = ["vendor__name", "type", "name"]
+        ordering = ["vendor__name", "type", "details", "name"]
         verbose_name = "Краска"
         verbose_name_plural = "Краски"
 
 
 class PaintInventory(models.Model):
-    user = models.OneToOneField(User, verbose_name="Пользователь", on_delete=models.RESTRICT)
+    user = models.ForeignKey(User, verbose_name="Пользователь", on_delete=models.RESTRICT)
     paint = models.ForeignKey(Paint, verbose_name="Краска", on_delete=models.RESTRICT)
     wish = models.BooleanField(verbose_name="Нужна", default=False)
     has = models.BooleanField(verbose_name="Есть", default=False)
 
     def __str__(self):
-        return self.paint
+        return "%s - %s" % (self.user.username, self.paint)
 
     class Meta:
         ordering = ["user", "has"]
