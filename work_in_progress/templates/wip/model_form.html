@@ -46,6 +46,16 @@ $('#id_bs_unit.ui.dropdown').dropdown({
     },
 });
 
+$('#id_bs_kill_team.ui.dropdown').dropdown({
+    placeholder: false,
+    clearable: true,
+    fullTextSearch: true,
+    action: function(text, value) {
+        $(this).dropdown('set selected', value);
+        $(this).dropdown('hide');
+    },
+});
+
 function onChangeUnit(event) {
     let newValue = '';
     if (event.target.selectedOptions[0].value.length > 0) {

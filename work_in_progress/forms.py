@@ -4,7 +4,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.contrib.auth.forms import AuthenticationForm
 
-from .models import BSCategory, BSUnit, Model, Artist, Paint, PaintVendor, PaintInventory
+from .models import BSCategory, BSUnit, Model, Artist, Paint, PaintVendor, PaintInventory, KillTeam
 
 
 class AddModelForm(forms.Form):
@@ -39,6 +39,10 @@ class AddModelForm(forms.Form):
                 )
             return value
 
+    class BSKillTeamChoiceField(forms.ModelChoiceField):
+        def label_from_instance(self, obj: KillTeam):
+            return obj.name
+
     name = forms.CharField(label='Название модели', max_length=500)
     in_inventory = forms.BooleanField(label='Куплено', required=False)
     hidden = forms.BooleanField(label='Скрыть', required=False, initial=False)
@@ -51,6 +55,10 @@ class AddModelForm(forms.Form):
                                 queryset=BSUnit.objects.all(),
                                 widget=forms.Select(attrs={'class': 'ui fluid search selection dropdown'}),
                                 required=False)
+    bs_kill_team = BSKillTeamChoiceField(label="КТ отряд из BattleScribe",
+                                      queryset=KillTeam.objects.all(),
+                                      widget=forms.Select(attrs={'class': 'ui fluid search selection dropdown'}),
+                                      required=False)
     count = forms.IntegerField(label="Количество миниатюр", required=False, initial=1)
 
 
@@ -67,6 +75,12 @@ class EditModelForm(forms.Form):
                                              queryset=BSUnit.objects.all(),
                                              widget=forms.Select(attrs={'class': 'ui fluid search selection dropdown'}),
                                              required=False)
+    bs_kill_team = AddModelForm.BSKillTeamChoiceField(label="КТ отряд из BattleScribe",
+                                                   queryset=KillTeam.objects.all(),
+                                                   widget=forms.Select(
+                                                       attrs={'class': 'ui fluid search selection dropdown'}
+                                                   ),
+                                                   required=False)
     status = forms.ChoiceField(label="Статус", required=False, choices=Model.Status.choices)
     images = forms.ImageField(label="Картиночки",
                               widget=forms.ClearableFileInput(attrs={'multiple': True}),

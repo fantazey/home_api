@@ -135,7 +135,8 @@ class WipUserModels(ListView):
         painted_status_query = Q(status__in=[Model.Status.DONE, Model.Status.VARNISHING, Model.Status.BASE_DECORATED])
         in_inventory_status_query = Q(status=Model.Status.IN_INVENTORY)
         units_painted = user_models.filter(painted_status_query).aggregate(Sum('unit_count'))['unit_count__sum']
-        units_unpainted = user_models.filter(~painted_status_query & ~in_inventory_status_query) \
+        units_unpainted = user_models.filter(~painted_status_query & ~in_inventory_status_query &
+                                             ~Q(status=Model.Status.WISHED)) \
                               .aggregate(Sum('unit_count'))['unit_count__sum']
         units_unassembled = user_models.filter(in_inventory_status_query) \
             .aggregate(Sum('unit_count'))['unit_count__sum']
@@ -209,6 +210,7 @@ class WipModelCreate(FormView):
                       status=Model.Status.WISHED,
                       battlescribe_unit=form.cleaned_data['bs_unit'],
                       buy_date=form.cleaned_data['buy_date'],
+                      kill_team=form.cleaned_data['bs_kill_team'],
                       hidden=form.cleaned_data['hidden'],
                       unit_count=form.cleaned_data['count'])
         progress_title = "Захотелось новую модельку"
@@ -245,6 +247,7 @@ class WipModelUpdate(FormView):
             'bs_unit': model.battlescribe_unit,
             'status': model.status,
             'bs_category': model.battlescribe_unit.bs_category if model.battlescribe_unit is not None else None,
+            'bs_kill_team': model.kill_team,
             'hidden': model.hidden,
             'count': model.unit_count
         }
@@ -254,6 +257,7 @@ class WipModelUpdate(FormView):
         model = self.get_model()
         model.name = form.cleaned_data['name']
         model.battlescribe_unit = form.cleaned_data['bs_unit']
+        model.kill_team = form.cleaned_data['bs_kill_team']
         model.buy_date = form.cleaned_data['buy_date']
         if model.status != form.cleaned_data['status']:
             progress = ModelProgress(model=model,
