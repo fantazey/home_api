@@ -13,7 +13,7 @@ from django.views.generic import ListView, View
 from django.views.generic.edit import FormView
 
 from .forms import AddModelForm, LoginForm, AddProgressForm, RegistrationForm, EditModelForm, \
-    ModelFilterForm, WorkMapFilterForm, PaintInventoryManageForm
+    ModelFilterForm, WorkMapFilterForm, PaintInventoryManageForm, InventoryFilterForm
 from .models import Model, ModelProgress, ModelImage, Artist, PaintInventory, Paint, PaintVendor
 
 
@@ -414,8 +414,27 @@ class WipUserInventory(ListView):
     context_object_name = 'items'
 
     def get_queryset(self):
-        return PaintInventory.objects.filter(user=self.request.user)\
+        queryset = PaintInventory.objects.filter(user=self.request.user)\
             .order_by('paint__vendor__name', 'paint__type', 'paint__name')
+        form = self.get_filter_form()
+        if form.is_valid():
+            if form.cleaned_data['vendor'] is not None:
+                queryset = queryset.filter(paint__vendor=form.cleaned_data['vendor'])
+            if form.cleaned_data['type'] != '':
+                queryset = queryset.filter(paint__type=form.cleaned_data['type'])
+            if form.cleaned_data['wish']:
+                queryset = queryset.filter(wish=True)
+            if form.cleaned_data['has']:
+                queryset = queryset.filter(has=True)
+        return queryset
+
+    def get_filter_form(self):
+        return InventoryFilterForm(self.request.GET)
+    
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        context['filter_form'] = self.get_filter_form()
+        return context
 
 
 class WipUserInventoryManage(FormView):
@@ -437,23 +456,20 @@ class WipUserInventoryManage(FormView):
         return context
 
     def form_valid(self, form):
-        cd = form.cleaned_data
-        inventory = []
-        paints_has = cd['has']
-        existed_inventory = PaintInventory.objects.filter(Q(has=True) & Q(user=self.request.user))
-        existed_paints = list(map(lambda x: x.paint, existed_inventory.filter(Q(paint__in=paints_has))))
-        to_delete = existed_inventory.filter(~Q(paint__in=paints_has))
-        to_save = list(filter(lambda x: x not in existed_paints, paints_has))  # list(set(a) - set(b))
-        to_delete.delete()
-        for paint in to_save:
-            inventory.append(PaintInventory(user=self.request.user, paint=paint, has=True))
-        paints_wish = cd['wish']
-        existed_inventory = PaintInventory.objects.filter(Q(wish=True) & Q(user=self.request.user))
-        existed_paints = list(map(lambda x: x.paint, existed_inventory.filter(Q(paint__in=paints_wish))))
-        to_delete = existed_inventory.filter(~Q(paint__in=paints_wish))
-        to_save = list(filter(lambda x: x not in existed_paints, paints_wish))  # list(set(a) - set(b))
-        to_delete.delete()
-        for paint in to_save:
-            inventory.append(PaintInventory(user=self.request.user, paint=paint, wish=True))
+        user_existed_inventory = PaintInventory.objects.filter(Q(user=self.request.user))
+        inventory = self.prepare_inventory(user_existed_inventory.filter(Q(has=True)), form.cleaned_data['has'],
+                                           has=True)
+        inventory.extend(self.prepare_inventory(user_existed_inventory.filter(Q(wish=True)), form.cleaned_data['wish'],
+                                                wish=True))
         PaintInventory.objects.bulk_create(inventory)
         return redirect(reverse('wip:inventory'))
+
+    def prepare_inventory(self, existed_inventory, form_paints, has=False, wish=False):
+        inventory = []
+        existed_paints = list(map(lambda x: x.paint, existed_inventory.filter(Q(paint__in=form_paints))))
+        to_delete = existed_inventory.filter(~Q(paint__in=form_paints))
+        to_save = list(filter(lambda x: x not in existed_paints, form_paints))  # list(set(a) - set(b))
+        to_delete.delete()
+        for paint in to_save:
+            inventory.append(PaintInventory(user=self.request.user, paint=paint, has=has, wish=wish))
+        return inventory

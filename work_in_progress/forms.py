@@ -178,19 +178,13 @@ class PaintInventoryManageForm(forms.Form):
         paints_wish = []
         for v in self.vendors:
             vendor = PaintVendor.objects.get(id=v[0])
-            y = v[3]
-            if y in cleaned_data:
-                yy = cleaned_data[y]
-                yyy = set(yy)
-                ids = list(map(lambda x: int(x), yyy))
+            if v[3] in cleaned_data:
+                ids = list(map(lambda x: int(x), set(cleaned_data[v[3]])))
                 selected_has_paints = Paint.objects.filter(vendor=vendor,
                                                            id__in=ids)
                 paints_has.extend(selected_has_paints)
-            y = v[4]
-            if y in cleaned_data:
-                yy = cleaned_data[y]
-                yyy = set(yy)
-                ids = list(map(lambda x: int(x), yyy))
+            if v[4] in cleaned_data:
+                ids = list(map(lambda x: int(x), set(cleaned_data[v[4]])))
                 selected_wish_paints = Paint.objects.filter(vendor=vendor,
                                                             id__in=ids)
                 paints_wish.extend(selected_wish_paints)
@@ -198,3 +192,27 @@ class PaintInventoryManageForm(forms.Form):
             'has': paints_has,
             'wish': paints_wish
         }
+
+
+class InventoryFilterForm(forms.Form):
+    vendor = forms.ModelChoiceField(label="Производитель", queryset=PaintVendor.objects.all(), required=False)
+    type = forms.ChoiceField(label="Тип", choices=(), required=False)
+    status = forms.ChoiceField(label="Состояние",
+                               choices=(('', '----'), ('wish', 'Надо купить'), ('has', 'В наличии')),
+                               required=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['type'].choices = (('', '----'), *set((x, x) for x in Paint.objects.all().values_list('type',
+                                                                                                          flat=True)))
+
+    def clean(self):
+        cleaned_data = super().clean()
+        cleaned_data['wish'] = False
+        cleaned_data['has'] = False
+        if 'status' in cleaned_data:
+            if cleaned_data['status'] == 'wish':
+                cleaned_data['wish'] = True
+            if cleaned_data['status'] == 'has':
+                cleaned_data['has'] = True
+        return cleaned_data

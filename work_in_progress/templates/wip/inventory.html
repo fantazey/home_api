@@ -1,10 +1,46 @@
 {% extends 'wip/base.html' %}
 {% load static %}
 {% block content %}
+    <script>
+$(function() {
+    function splitQuery() {
+        const search = location.search;
+        const res = {};
+        search.replace('?','').split('&').filter(x => x.length > 0).forEach(param => {
+            const k = param.split('=')[0];
+            res[k] = param.split('=')[1];
+        })
+        return res;
+    }
+    function glueQuery(kv) {
+        const res = [];
+        Object.keys(kv).map(k => {
+            res.push(k+'='+kv[k]);
+        });
+        return '?' + res.join('&');
+    }
+    $('#submit_filter_form').on('click', function(event) {
+        event.preventDefault();
+        const query = splitQuery();
+        query['type'] = $('#id_type').val();
+        query['vendor'] = $('#id_vendor').val();
+        query['status'] = $('#id_status').val();
+        location.href = glueQuery(query);
+    })
+})
+</script>
 {% if request.user.is_authenticated %}
-    <a href="{% url 'wip:inventory_manage' %}">Управление</a>
+        <a class="ui button" href="{% url 'wip:inventory_manage' %}">Управление</a>
 {% endif %}
-<div>фильры</div>
+<div class="ui grid relaxed form ui">
+    <div class="three wide column">
+        {{ filter_form.as_div }}
+        <a id="submit_filter_form">
+            <i class="search icon"></i>
+            Искать
+        </a>
+    </div>
+</div>
 <div class="ui cards" style="margin-bottom: 10px">
     {% for item in items %}
         <div class="ui card">

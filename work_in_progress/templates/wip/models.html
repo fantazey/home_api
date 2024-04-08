@@ -7,7 +7,7 @@ $(function() {
     function splitQuery() {
         const search = location.search;
         const res = {};
-        search.replace('?','').split('&').forEach(param => {
+        search.replace('?','').split('&').filter(x => x.length > 0).forEach(param => {
             const k = param.split('=')[0];
             res[k] = param.split('=')[1];
         })

@@ -38,6 +38,9 @@
                 })
                 $deleteFromHas.click(e => {
                     const idList = $hasList.val();
+                    if (idList.length === 0) {
+                        return;
+                    }
                     $hasList.find('option').each((i, option) => {
                        if (idList.includes($(option).attr('value'))) {
                            $(option).remove();
@@ -46,6 +49,9 @@
                 })
                 $deleteFromWish.click(e => {
                     const idList = $wishList.val();
+                    if (idList.length === 0) {
+                        return;
+                    }
                     $wishList.find('option').each((i, option) => {
                        if (idList.includes($(option).attr('value'))) {
                            $(option).remove();
