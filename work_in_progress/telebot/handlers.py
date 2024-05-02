@@ -126,7 +126,8 @@ async def model_keyboard_handler(update: Update, context: ContextTypes.DEFAULT_T
 
     if query.data.startswith("model_view_"):
         model_id = int(query.data.replace("model_view_", ""))
-        if 'model_id' in context.user_data and model_id != context.user_data['model_id']:
+        if 'model_id' in context.user_data and model_id != context.user_data['model_id'] and \
+                'progress_id' in context.user_data:
             # нужно сбрасывать ид записи времени при переключении модели,чтобы при загрузке фотографий они
             # грузились в новую выбранную модель, а не в прогресс который был записан для другой модели
             del context.user_data['progress_id']
