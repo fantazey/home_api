@@ -178,6 +178,7 @@ class WipUserModels(ListView):
         return users.first()
 
     def get_filter_form(self):
+        # todo: добавить фильтр по террейн/киллтим/категория battlescribe
         return ModelFilterForm(self.request.GET)
 
     def get_work_map_filter_form(self):
