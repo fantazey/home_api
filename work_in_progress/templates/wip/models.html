@@ -56,10 +56,31 @@ $(function() {
         </div>
     {% endfor %}
     <div class="two wide column">
-        <div>Покрашено - {{ units_painted }}</div>
-        <div>Не покрашено - {{ units_unpainted }}</div>
-        <div>Не собрано - {{ units_unassembled }}</div>
-        <div>Не куплено - {{ units_to_buy }}</div>
+        {% if units_painted is not None %}
+            <div>Покрашено - {{ units_painted }}</div>
+        {% endif %}
+        {% if units_unpainted is not None %}
+            <div>Не покрашено - {{ units_unpainted }}</div>
+        {% endif %}
+        {% if units_unassembled is not None %}
+            <div>Не собрано - {{ units_unassembled }}</div>
+        {% endif %}
+        {% if units_to_buy is not None %}
+            <div>Не куплено - {{ units_to_buy }}</div>
+        {% endif %}
+
+        {% if terrain_painted is not None %}
+            <div>Террейна покрашено - {{ terrain_painted }}</div>
+        {% endif %}
+        {% if terrain_unpainted is not None %}
+            <div>Террейна не покрашено - {{ terrain_unpainted }}</div>
+        {% endif %}
+        {% if terrain_unassembled is not None %}
+            <div>Террейна не собрано - {{ terrain_unassembled }}</div>
+        {% endif %}
+        {% if terrain_to_buy is not None %}
+            <div>Террейна не куплено - {{ terrain_to_buy }}</div>
+        {% endif %}
     </div>
 </div>
 <div class="ui grid relaxed form ui">
@@ -92,9 +113,24 @@ $(function() {
                 </a>
                 <div class="meta">
                     {{ model.get_status_display }} | {{ model.get_hours_spent|duration }}
+                    {% if model.status != model.Status.WISHED and model.status != model.Status.DONE %}
+                        | лежит уже {{ model.get_days_since_buy }} дней
+                    {% endif %}
                 </div>
                 <div class="description">
-
+                    {% if model.terrain == True %}
+                        <div style="color: lightcoral">Террейн</div>
+                    {% endif %}
+                    {% if model.unit_count > 1 %}
+                        <div>Юнитов в модели: {{ model.unit_count }}</div>
+                    {% endif %}
+                    {% if model.battlescribe_unit %}
+                        <div>Категория BS: {{ model.battlescribe_unit.bs_category.name }}</div>
+                        <div>Модель BS: {{ model.battlescribe_unit.name }}</div>
+                    {% endif %}
+                    {% if model.kill_team %}
+                        <div>Киллтим: {{ model.kill_team.name }}</div>
+                    {% endif %}
                 </div>
             </div>
             <div class="extra content">

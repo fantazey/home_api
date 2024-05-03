@@ -134,13 +134,24 @@ class WipUserModels(ListView):
         user_models = Model.objects.filter(user=user)
         painted_status_query = Q(status__in=[Model.Status.DONE, Model.Status.VARNISHING, Model.Status.BASE_DECORATED])
         in_inventory_status_query = Q(status=Model.Status.IN_INVENTORY)
-        units_painted = user_models.filter(painted_status_query).aggregate(Sum('unit_count'))['unit_count__sum']
-        units_unpainted = user_models.filter(~painted_status_query & ~in_inventory_status_query &
-                                             ~Q(status=Model.Status.WISHED)) \
-                              .aggregate(Sum('unit_count'))['unit_count__sum']
-        units_unassembled = user_models.filter(in_inventory_status_query) \
+        units_painted = user_models.filter(Q(terrain=False) & painted_status_query)\
             .aggregate(Sum('unit_count'))['unit_count__sum']
-        units_to_buy = user_models.filter(Q(status=Model.Status.WISHED)).aggregate(Sum('unit_count'))['unit_count__sum']
+        units_unpainted = user_models.filter(Q(terrain=False) & ~painted_status_query & ~in_inventory_status_query &
+                                             ~Q(status=Model.Status.WISHED))\
+            .aggregate(Sum('unit_count'))['unit_count__sum']
+        units_unassembled = user_models.filter(Q(terrain=False) & in_inventory_status_query) \
+            .aggregate(Sum('unit_count'))['unit_count__sum']
+        units_to_buy = user_models.filter(Q(terrain=False) & Q(status=Model.Status.WISHED))\
+            .aggregate(Sum('unit_count'))['unit_count__sum']
+        terrain_painted = user_models.filter(Q(terrain=True) & painted_status_query) \
+            .aggregate(Sum('unit_count'))['unit_count__sum']
+        terrain_unpainted = user_models.filter(Q(terrain=True) & ~painted_status_query & ~in_inventory_status_query &
+                                             ~Q(status=Model.Status.WISHED)) \
+            .aggregate(Sum('unit_count'))['unit_count__sum']
+        terrain_unassembled = user_models.filter(Q(terrain=True) & in_inventory_status_query) \
+            .aggregate(Sum('unit_count'))['unit_count__sum']
+        terrain_to_buy = user_models.filter(Q(terrain=True) & Q(status=Model.Status.WISHED)) \
+            .aggregate(Sum('unit_count'))['unit_count__sum']
         status_map = [(Model.Status(x['status']).label, x['total_time']) for x in sum_time_by_sorted_status]
         status_map.append(('Итого', sum_time_by_status.aggregate(Sum('total_time'))['total_time__sum']))
         status_map = [status_map[:5], status_map[5:]]
@@ -153,7 +164,11 @@ class WipUserModels(ListView):
             'units_painted': units_painted,
             'units_unpainted': units_unpainted,
             'units_unassembled': units_unassembled,
-            'units_to_buy': units_to_buy
+            'units_to_buy': terrain_to_buy,
+            'terrain_painted': terrain_painted,
+            'terrain_unpainted': terrain_unpainted,
+            'terrain_unassembled': terrain_unassembled,
+            'terrain_to_buy': terrain_to_buy
         }
 
     def get_user(self) -> User:
