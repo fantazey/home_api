@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'travel.apps.TravelConfig',
     'work_in_progress.apps.WorkInProgressConfig',
     'postcards.apps.PostcardsConfig',
+    'todo_mobile.apps.TodoMobileConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
