@@ -4,8 +4,8 @@ import bluetooth
 import time
 
 device_addr = "B7:7B:1A:07:21:AF"
-socket_path = "/tmp/homeapi/hangar.sock"
-socket_pid = "/tmp/homeapi/server.pid"
+socket_path = "/home/pi/Projects/home-api/work_in_progress/hangar.sock"
+socket_pid = "/home/pi/Projects/home-api/work_in_progress/server.pid"
 
 
 def send_command(command):

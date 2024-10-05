@@ -133,7 +133,7 @@ class WipUserModels(ListView):
                                            key=lambda x: Model.Status.work_order().index(x['status']))
         user_models = Model.objects.filter(user=user)
         painted_status_query = Q(status__in=[Model.Status.DONE, Model.Status.VARNISHING, Model.Status.BASE_DECORATED])
-        in_inventory_status_query = Q(status=Model.Status.IN_INVENTORY)
+        in_inventory_status_query = Q(status_in=[Model.Status.IN_INVENTORY, Model.Status.ASSEMBLING])
         units_painted = user_models.filter(Q(terrain=False) & painted_status_query)\
             .aggregate(Sum('unit_count'))['unit_count__sum']
         units_unpainted = user_models.filter(Q(terrain=False) & ~painted_status_query & ~in_inventory_status_query &
@@ -164,7 +164,7 @@ class WipUserModels(ListView):
             'units_painted': units_painted,
             'units_unpainted': units_unpainted,
             'units_unassembled': units_unassembled,
-            'units_to_buy': terrain_to_buy,
+            'units_to_buy': units_to_buy,
             'terrain_painted': terrain_painted,
             'terrain_unpainted': terrain_unpainted,
             'terrain_unassembled': terrain_unassembled,
