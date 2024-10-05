@@ -68,6 +68,9 @@ $(function() {
         {% if units_to_buy is not None %}
             <div>Не куплено - {{ units_to_buy }}</div>
         {% endif %}
+        {% if units_total is not None %}
+            <div>Всего - {{ units_total }}</div>
+        {% endif %}
 
         {% if terrain_painted is not None %}
             <div>Террейна покрашено - {{ terrain_painted }}</div>
@@ -80,6 +83,9 @@ $(function() {
         {% endif %}
         {% if terrain_to_buy is not None %}
             <div>Террейна не куплено - {{ terrain_to_buy }}</div>
+        {% endif %}
+        {% if terrain_total is not None %}
+            <div>Террейна всего - {{ terrain_total }}</div>
         {% endif %}
     </div>
 </div>
