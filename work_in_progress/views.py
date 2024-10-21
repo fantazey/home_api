@@ -14,7 +14,8 @@ from django.views.generic.edit import FormView
 
 from .forms import AddModelForm, LoginForm, AddProgressForm, RegistrationForm, EditModelForm, \
     ModelFilterForm, WorkMapFilterForm, PaintInventoryManageForm, InventoryFilterForm
-from .models import Model, ModelProgress, ModelImage, Artist, PaintInventory, Paint, PaintVendor
+from .models import Model, ModelProgress, ModelImage, Artist, PaintInventory, Paint, PaintVendor, UserModelStatus, \
+    StatusGroup
 
 
 class WipLoginView(LoginView):
@@ -98,11 +99,12 @@ class WipUserModels(ListView):
         user = self.get_user()
         old_date = timezone.now() - datetime.timedelta(days=2000)
         user_models = Model.objects.annotate(last_record=Max('progress__datetime', default=old_date)) \
-            .filter(user__username=user.username) \
+            .filter(user=user) \
             .order_by('-last_record', 'buy_date', 'created')
-        form = self.get_filter_form()
-        if form.is_valid() and len(form.cleaned_data['status']) > 0:
-            user_models = user_models.filter(status=form.cleaned_data['status'])
+        form = self.get_filter_form(user)
+        if form.is_valid():
+            if form.cleaned_data['status']:
+                user_models = user_models.filter(user_status=form.cleaned_data['status'])
         if self.request.user != user:
             user_models = user_models.filter(hidden=False)
         return user_models
@@ -125,55 +127,34 @@ class WipUserModels(ListView):
             progress_by_date[d] += progress.time
 
         date_map = build_map(progress_by_date, map_filter_year)
-        sum_time_by_status = progress_list.filter(Q(status__isnull=False) &
-                                                  (~Q(status__in=[Model.Status.IN_INVENTORY, Model.Status.WISHED]))) \
-            .values("status") \
-            .annotate(total_time=Sum('time'))
-        sum_time_by_sorted_status = sorted(sum_time_by_status,
-                                           key=lambda x: Model.Status.work_order().index(x['status']))
-        user_models = Model.objects.filter(user=user)
-        painted_status_query = Q(status__in=[Model.Status.DONE, Model.Status.VARNISHING, Model.Status.BASE_DECORATED])
-        in_inventory_status_query = Q(status__in=[Model.Status.IN_INVENTORY, Model.Status.ASSEMBLING])
-        units_painted = user_models.filter(Q(terrain=False) & painted_status_query)\
-            .aggregate(Sum('unit_count'))['unit_count__sum']
-        units_unpainted = user_models.filter(Q(terrain=False) & ~painted_status_query & ~in_inventory_status_query &
-                                             ~Q(status=Model.Status.WISHED))\
-            .aggregate(Sum('unit_count'))['unit_count__sum']
-        units_unassembled = user_models.filter(Q(terrain=False) & in_inventory_status_query) \
-            .aggregate(Sum('unit_count'))['unit_count__sum']
-        units_total = user_models.filter(Q(terrain=False) & ~Q(status=Model.Status.WISHED)) \
-            .aggregate(Sum('unit_count'))['unit_count__sum']
+        sum_time_by_status = progress_list.filter(Q(user_status__isnull=False)) \
+            .values("user_status__name") \
+            .annotate(total_time=Sum('time'))\
+            .order_by("user_status__order")
+        sum_time_by_sorted_status = sum_time_by_status
 
-        units_to_buy = user_models.filter(Q(terrain=False) & Q(status=Model.Status.WISHED))\
-            .aggregate(Sum('unit_count'))['unit_count__sum']
-        terrain_painted = user_models.filter(Q(terrain=True) & painted_status_query) \
-            .aggregate(Sum('unit_count'))['unit_count__sum']
-        terrain_unpainted = user_models.filter(Q(terrain=True) & ~painted_status_query & ~in_inventory_status_query &
-                                             ~Q(status=Model.Status.WISHED)) \
-            .aggregate(Sum('unit_count'))['unit_count__sum']
-        terrain_unassembled = user_models.filter(Q(terrain=True) & in_inventory_status_query) \
-            .aggregate(Sum('unit_count'))['unit_count__sum']
-        terrain_to_buy = user_models.filter(Q(terrain=True) & Q(status=Model.Status.WISHED)) \
-            .aggregate(Sum('unit_count'))['unit_count__sum']
-        terrain_total = user_models.filter(Q(terrain=True) & ~Q(status=Model.Status.WISHED)) \
-            .aggregate(Sum('unit_count'))['unit_count__sum']
-        status_map = [(Model.Status(x['status']).label, x['total_time']) for x in sum_time_by_sorted_status]
+        user_models = Model.objects.filter(user=user)
+        status_groups = StatusGroup.objects.filter(user=user)
+        units_count_by_status_group = {}
+        for status_group in status_groups:
+            query = Q(user_status__group=status_group) & Q(terrain=False)
+            terrain_query = Q(user_status__group=status_group) & Q(terrain=True)
+            units_count_by_status_group[status_group.name] = {
+                'model': user_models.filter(query).aggregate(Sum('unit_count'))['unit_count__sum'],
+                'terrain': user_models.filter(terrain_query).aggregate(Sum('unit_count'))['unit_count__sum']
+            }
+        units_total = user_models.filter(Q(terrain=False)).aggregate(Sum('unit_count'))['unit_count__sum']
+        terrain_total = user_models.filter(Q(terrain=True)).aggregate(Sum('unit_count'))['unit_count__sum']
+        status_map = [(x['user_status__name'], x['total_time']) for x in sum_time_by_sorted_status]
         status_map.append(('Итого', sum_time_by_status.aggregate(Sum('total_time'))['total_time__sum']))
         status_map = [status_map[:5], status_map[5:]]
         return context | {
             'user': user,
-            'filter_form': self.get_filter_form(),
+            'filter_form': self.get_filter_form(user),
             'work_map_filter_form': map_filter_form,
             'date_map': date_map,
             'time_status_map': status_map,
-            'units_painted': units_painted,
-            'units_unpainted': units_unpainted,
-            'units_unassembled': units_unassembled,
-            'units_to_buy': units_to_buy,
-            'terrain_painted': terrain_painted,
-            'terrain_unpainted': terrain_unpainted,
-            'terrain_unassembled': terrain_unassembled,
-            'terrain_to_buy': terrain_to_buy,
+            'units_count_by_status_group': units_count_by_status_group,
             'units_total': units_total,
             'terrain_total': terrain_total
         }
@@ -184,9 +165,9 @@ class WipUserModels(ListView):
             raise Http404("Пользователь не найден")
         return users.first()
 
-    def get_filter_form(self):
+    def get_filter_form(self, user: User):
         # todo: добавить фильтр по террейн/киллтим/категория battlescribe
-        return ModelFilterForm(self.request.GET)
+        return ModelFilterForm(self.request.GET, user=user)
 
     def get_work_map_filter_form(self):
         return WorkMapFilterForm(self.request.GET, initial={'work_map_year': datetime.date.today().year})
@@ -219,6 +200,11 @@ class WipModelCreate(FormView):
     form_class = AddModelForm
     template_name = 'wip/model_add.html'
 
+    def get_form_kwargs(self):
+        parent_kwargs = super().get_form_kwargs()
+        parent_kwargs['user'] = self.request.user
+        return parent_kwargs
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['title'] = 'Добавление модели в PileOfShame'
@@ -228,21 +214,23 @@ class WipModelCreate(FormView):
 
     def form_valid(self, form):
         name = form.cleaned_data['name']
+        status = UserModelStatus.objects.get(user=self.request.user, is_initial=True)
         model = Model(name=name,
                       user=self.request.user,
-                      status=Model.Status.WISHED,
+                      user_status=status,
                       battlescribe_unit=form.cleaned_data['bs_unit'],
                       buy_date=form.cleaned_data['buy_date'],
                       kill_team=form.cleaned_data['bs_kill_team'],
                       hidden=form.cleaned_data['hidden'],
                       unit_count=form.cleaned_data['count'])
         progress_title = "Захотелось новую модельку"
-        if form.cleaned_data['in_inventory']:
-            model.status = Model.Status.IN_INVENTORY
-            progress_title = "Куплено"
+        if form.cleaned_data['status']:
+            model.user_status = form.cleaned_data['status']
+            progress_title = form.cleaned_data['status'].transition_title
 
         model.save()
-        progress = ModelProgress(datetime=datetime.datetime.now(), title=progress_title, model=model)
+        progress = ModelProgress(datetime=datetime.datetime.now(), title=progress_title, model=model,
+                                 user_status=model.user_status)
         progress.save()
         return redirect(reverse('wip:models', kwargs={'username': self.request.user.username}))
 
@@ -250,6 +238,11 @@ class WipModelCreate(FormView):
 class WipModelUpdate(FormView):
     form_class = EditModelForm
     template_name = 'wip/model_edit.html'
+
+    def get_form_kwargs(self):
+        parent_kwargs = super().get_form_kwargs()
+        parent_kwargs['user'] = self.request.user
+        return parent_kwargs
 
     def get_model(self) -> Model:
         return Model.objects.get(id=self.kwargs['model_id'], user=self.request.user)
@@ -268,7 +261,7 @@ class WipModelUpdate(FormView):
             'name': model.name,
             'buy_date': model.buy_date.strftime('%Y-%m-%d') if model.buy_date is not None else None,
             'bs_unit': model.battlescribe_unit,
-            'status': model.status,
+            'status': model.user_status,
             'bs_category': model.battlescribe_unit.bs_category if model.battlescribe_unit is not None else None,
             'bs_kill_team': model.kill_team,
             'hidden': model.hidden,
@@ -282,14 +275,14 @@ class WipModelUpdate(FormView):
         model.battlescribe_unit = form.cleaned_data['bs_unit']
         model.kill_team = form.cleaned_data['bs_kill_team']
         model.buy_date = form.cleaned_data['buy_date']
-        if model.status != form.cleaned_data['status']:
+        if model.user_status != form.cleaned_data['status']:
             progress = ModelProgress(model=model,
                                      title="Смена статуса на: %s" % Model.Status(form.cleaned_data['status']).label,
                                      time=0,
-                                     status=model.status,
+                                     user_status=model.user_status,
                                      datetime=datetime.datetime.now())
             progress.save()
-        model.status = form.cleaned_data['status']
+        model.user_status = form.cleaned_data['status']
         model.hidden = form.cleaned_data['hidden']
         model.unit_count = form.cleaned_data['count']
         model.save()
@@ -308,14 +301,11 @@ def delete_model(request, model_id):
 
 
 class WipModelStatusActions(View):
-
     def get_model(self) -> Model:
         return Model.objects.get(id=self.kwargs['model_id'], user=self.request.user)
 
     def get(self, *args, **kwargs):
-        handler = getattr(self.get_model(), self.kwargs['status_action'])
-        if handler is not None:
-            handler()
+        self.get_model().change_status(self.kwargs['next_status'])
         return redirect(reverse('wip:models', kwargs={'username': self.request.user.username}))
 
 
@@ -350,6 +340,11 @@ class WipModelProgressCreate(FormView):
     template_name = 'wip/progress_form.html'
     form_class = AddProgressForm
 
+    def get_form_kwargs(self):
+        parent_kwargs = super().get_form_kwargs()
+        parent_kwargs['user'] = self.get_user()
+        return parent_kwargs
+
     def get_user(self):
         return self.request.user
 
@@ -368,7 +363,7 @@ class WipModelProgressCreate(FormView):
         return context
 
     def get_initial(self):
-        return {'status': self.get_model().status}
+        return {'status': self.get_model().user_status}
 
     def form_valid(self, form):
         model = self.get_model()
@@ -376,7 +371,7 @@ class WipModelProgressCreate(FormView):
                                  title=form.cleaned_data['title'],
                                  description=form.cleaned_data['description'],
                                  time=form.cleaned_data['time'],
-                                 status=form.cleaned_data['status'],
+                                 user_status=form.cleaned_data['status'],
                                  datetime=form.cleaned_data['date'])
         progress.save()
         progress.add_images(self.request.FILES.getlist('images'))
@@ -389,13 +384,14 @@ class WipModelProgressUpdate(WipModelProgressCreate):
         return ModelProgress.objects.get(id=self.kwargs['progress_id'], model=self.get_model())
 
     def get_initial(self):
+        initial = super().get_initial()
         progress = self.get_progress()
-        return {
+        return initial | {
             'title': progress.title,
             'description': progress.description,
             'date': progress.datetime,
             'time': progress.time,
-            'status': progress.status,
+            'status': progress.user_status,
             'images': progress.modelimage_set.values('image')
         }
 
@@ -418,7 +414,7 @@ class WipModelProgressUpdate(WipModelProgressCreate):
         progress.description = form.cleaned_data['description']
         progress.time = form.cleaned_data['time']
         progress.datetime = form.cleaned_data['date']
-        progress.status = form.cleaned_data['status']
+        progress.user_status = form.cleaned_data['status']
         progress.save()
         progress.add_images(self.request.FILES.getlist('images'))
         return redirect(reverse('wip:progress', args=(model.user.username, model.id,)))

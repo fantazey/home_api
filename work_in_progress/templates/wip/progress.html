@@ -26,8 +26,8 @@
         <tr>
             <td>{{ progress.datetime }}</td>
             <td>
-                {% if progress.status %}
-                    {{ progress.get_status_display }}
+                {% if progress.user_status %}
+                    {{ progress.user_status }}
                 {% endif %}
             </td>
             <td>{{ progress.title }}</td>

@@ -4,7 +4,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.contrib.auth.forms import AuthenticationForm
 
-from .models import BSCategory, BSUnit, Model, Artist, Paint, PaintVendor, PaintInventory, KillTeam
+from .models import BSCategory, BSUnit, Paint, PaintVendor, PaintInventory, KillTeam, UserModelStatus
 
 
 class AddModelForm(forms.Form):
@@ -44,7 +44,7 @@ class AddModelForm(forms.Form):
             return obj.name
 
     name = forms.CharField(label='Название модели', max_length=500)
-    in_inventory = forms.BooleanField(label='Куплено', required=False)
+    status = forms.ModelChoiceField(label='Статус', queryset=None, required=False)
     hidden = forms.BooleanField(label='Скрыть', required=False, initial=False)
     buy_date = forms.DateField(label='Дата покупки', required=False, widget=forms.DateInput(attrs={'type': 'date'}))
     bs_category = BSCategoryChoiceField(label="Категория из BattleScribe",
@@ -60,6 +60,10 @@ class AddModelForm(forms.Form):
                                       widget=forms.Select(attrs={'class': 'ui fluid search selection dropdown'}),
                                       required=False)
     count = forms.IntegerField(label="Количество миниатюр", required=False, initial=1)
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['status'].queryset = UserModelStatus.objects.filter(user=user)
 
 
 class EditModelForm(forms.Form):
@@ -81,12 +85,16 @@ class EditModelForm(forms.Form):
                                                        attrs={'class': 'ui fluid search selection dropdown'}
                                                    ),
                                                    required=False)
-    status = forms.ChoiceField(label="Статус", required=False, choices=Model.Status.choices)
+    status = forms.ModelChoiceField(label="Статус", queryset=None)
     images = forms.ImageField(label="Картиночки",
                               widget=forms.ClearableFileInput(attrs={'multiple': True}),
                               required=False)
     hidden = forms.BooleanField(label="Скрыть", required=False, initial=False)
     count = forms.IntegerField(label="Количество миниатюр", required=False, initial=1)
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['status'].queryset = UserModelStatus.objects.filter(user=user)
 
 
 class AddProgressForm(forms.Form):
@@ -94,10 +102,14 @@ class AddProgressForm(forms.Form):
     description = forms.CharField(label='Подробнее', widget=forms.Textarea, required=False)
     date = forms.DateTimeField(label='Дата проведения работы', initial=datetime.now)
     time = forms.FloatField(label="Затраченое время", initial=0.0)
-    status = forms.ChoiceField(label="В статусе", choices=Model.Status.choices)
+    status = forms.ModelChoiceField(label="В статусе", queryset=None)
     images = forms.ImageField(label="Картиночки",
                               widget=forms.ClearableFileInput(attrs={'multiple': True}),
                               required=False)
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['status'].queryset = UserModelStatus.objects.filter(user=user)
 
 
 class LoginForm(AuthenticationForm):
@@ -118,8 +130,12 @@ class RegistrationForm(forms.Form):
 
 
 class ModelFilterForm(forms.Form):
-    status = forms.ChoiceField(label="Статус", choices=(('', '----'), *Model.Status.choices), required=False)
+    status = forms.ModelChoiceField(label="Статус", required=False, queryset=None, blank=True)
     page_size = forms.ChoiceField(label="На странице", choices=((x, x) for x in [12, 24, 900]), required=False)
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['status'].queryset = UserModelStatus.objects.filter(user=user)
 
 
 YEAR_CHOICES = ((x, x) for x in range(date.today().year, 2021, -1))

@@ -4,13 +4,6 @@
 {% endblock back_link %}
 {% block script %}
 <script>
-$('#id_in_inventory').click(function() {
-    if (document.querySelector('#id_in_inventory').checked) {
-        $('#buy-date-field').removeClass('disabled');
-    } else {
-        $('#buy-date-field').addClass('disabled');
-    }
-});
 $('#id_bs_category.ui.dropdown').dropdown({
     placeholder: false,
     clearable: true,

@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from django.db.models import Max
 from django.utils import timezone
 
-from work_in_progress.models import Model, ModelProgress, ModelImage, Artist
+from work_in_progress.models import Model, ModelProgress, ModelImage, Artist, UserModelStatus
 from work_in_progress.templatetags.wip_filters import duration
 
 
@@ -40,7 +40,7 @@ def get_model(user: User, model_id: int) -> dict:
     return {
         'id': model.id,
         'name': model.name,
-        'status': model.get_status_display(),
+        'status': model.user_status.name,
         'duration': duration(model.get_hours_spent),
         'model': model
     }
@@ -65,7 +65,7 @@ def get_user_models_paged(user: User, page: int) -> list[dict]:
         result.append({
             'id': model.id,
             'name': model.name,
-            'status': model.get_status_display()
+            'status': model.user_status.name
         })
     return result
 
@@ -82,7 +82,7 @@ def record_model_progress(user: User, model_id: int, time: int, title: str) -> i
     """
     model = Model.objects.filter(id=model_id, user=user).first()
     progress = ModelProgress(model=model,
-                             status=model.status,
+                             user_status=model.user_status,
                              time=time,
                              title=title,
                              datetime=timezone.now())
@@ -107,14 +107,8 @@ def save_image_to_progress(user: User, model_id: int, model_progress_id: int, im
 
 @sync_to_async
 def create_model(user: User, name: str) -> int:
-    model = Model(name=name, user=user, status=Model.Status.IN_INVENTORY, buy_date=datetime.datetime.now())
-    model.save()
-    return model.id
-
-
-@sync_to_async
-def want_model(user: User, name: str) -> int:
-    model = Model(name=name, user=user, status=Model.Status.WISHED)
+    status = UserModelStatus.objects.get(user=user, is_initial=True)
+    model = Model(name=name, user=user, user_status=status)
     model.save()
     return model.id
 
@@ -143,7 +137,7 @@ def get_last_model_progress(user: User, model_id: int) -> dict:
         return {
             'id': progress.id,
             'description': progress.description,
-            'status': progress.get_status_display(),
+            'status': progress.user_status.name,
             'time': progress.time,
             'datetime': progress.datetime.strftime("%d-%m-%Y %H:%M:%S"),
             'model': model
@@ -161,3 +155,7 @@ def delete_progress(user: User, model_id: int, progress_id: int):
     images.update(progress=None)
     progress.delete()
 
+
+@sync_to_async
+def get_status_list(user: User):
+    return [(x.slug, x.name) for x in UserModelStatus.objects.filter(user=user)]

@@ -99,6 +99,8 @@ class Model(models.Model):
     battlescribe_unit = models.ForeignKey(BSUnit, verbose_name="Из каталога BS", on_delete=models.RESTRICT, null=True)
     kill_team = models.ForeignKey('KillTeam', verbose_name="KillTeam каталога BS", on_delete=models.RESTRICT, null=True)
     status = models.CharField(verbose_name="Статус", max_length=200, choices=Status.choices, default=Status.WISHED)
+    user_status = models.ForeignKey('UserModelStatus', on_delete=models.RESTRICT, verbose_name="Статус",
+                                    related_name="model_status", null=True)
     user = models.ForeignKey(User, verbose_name="Пользователь", on_delete=models.RESTRICT)
     buy_date = models.DateField(verbose_name="Дата покупки", null=True)
     created = models.DateTimeField(verbose_name="Дата создания", auto_now_add=True)
@@ -114,18 +116,20 @@ class Model(models.Model):
         verbose_name_plural = "Модели в работе"
 
     def __str__(self):
-        return "%s - %s" % (self.name, self.get_status_display())
+        return "%s - %s" % (self.name, self.user_status.name)
 
     def __unicode__(self):
-        return "%s - %s" % (self.name, self.get_status_display())
+        return "%s - %s" % (self.name, self.user_status.name)
 
-    def _update_status(self, new_status, progress_title):
+    def _update_status(self, new_status: 'UserModelStatus'):
+        if self.user != new_status.user:
+            raise Exception("Пользователь модели и статуса не совпадает")
         progress = ModelProgress(model=self,
                                  datetime=datetime.datetime.now(),
-                                 title=progress_title,
-                                 status=self.status)
+                                 title=new_status.transition_title,
+                                 user_status=new_status)
         progress.save()
-        self.status = new_status
+        self.user_status = new_status
         self.save()
 
     @staticmethod
@@ -146,50 +150,9 @@ class Model(models.Model):
             (Model.Status.DONE, "Готово"),
         ]
 
-    def change_status(self, status):
-        res = list(filter(lambda x: x[0] == status, Model.stages()))
-        if len(res) > 0:
-            self._update_status(res[0][0], res[0][1])
-
-    def put_in_inventory(self):
-        self.buy_date = datetime.datetime.now()
-        self._update_status(self.Status.IN_INVENTORY, "Куплено")
-
-    def start_assembly(self):
-        self._update_status(self.Status.ASSEMBLING, "Начал сборку")
-
-    def finish_assembly(self):
-        self._update_status(self.Status.ASSEMBLED, "Закончил сборку")
-
-    def start_priming(self):
-        self._update_status(self.Status.PRIMING, "Начал грунтовать")
-
-    def finish_priming(self):
-        self._update_status(self.Status.PRIMED, "Загрунтовано")
-
-    def start_painting(self):
-        self._update_status(self.Status.BATTLE_READY_PAINTING, "Начал красить в базу")
-
-    def finish_painting(self):
-        self._update_status(self.Status.BATTLE_READY_PAINTED, "Покрасил в базу")
-
-    def start_parade_ready_painting(self):
-        self._update_status(self.Status.PARADE_READY_PAINTING, "Начал добавлять хайлайты")
-
-    def finish_parade_ready_painting(self):
-        self._update_status(self.Status.PARADE_READY_PAINTED, "Законил хайлайты")
-
-    def start_base_decoration(self):
-        self._update_status(self.Status.BASE_DECORATING, "Начал оформлять подставки")
-
-    def finish_base_decoration(self):
-        self._update_status(self.Status.BASE_DECORATED, "Подставки оформлены")
-
-    def start_varnishing(self):
-        self._update_status(self.Status.VARNISHING, "Начал задувать лаком")
-
-    def finish_varnishing(self):
-        self._update_status(self.Status.DONE, "Готово!")
+    def change_status(self, status: str):
+        user_status = UserModelStatus.objects.get(user=self.user, slug=status)
+        self._update_status(user_status)
 
     @property
     def get_days_since_buy(self):
@@ -235,6 +198,8 @@ class ModelProgress(models.Model):
     time = models.FloatField(verbose_name="Затраченое время в часах", default=0.0)
     model = models.ForeignKey(Model, on_delete=models.RESTRICT, verbose_name="Прогресс", related_name="progress")
     status = models.CharField(verbose_name="Статус", max_length=200, choices=Model.Status.choices, null=True)
+    user_status = models.ForeignKey('UserModelStatus', on_delete=models.RESTRICT, verbose_name="Статус",
+                                    related_name="progress_status", null=True)
 
     class Meta:
         ordering = ["datetime"]
@@ -348,4 +313,48 @@ class KillTeamOperative(models.Model):
         verbose_name_plural = "Оперативники"
 
     def __str__(self):
+        return self.name
+
+
+class UserModelStatus(models.Model):
+    name = models.CharField(verbose_name="Название", max_length=500)
+    slug = models.CharField(verbose_name="Слаг", max_length=500)
+    transition_title = models.CharField(verbose_name="Заголовок в прогрессе модели при переходе в статус",
+                                        max_length=500, null=True, blank=True)
+    order = models.IntegerField(verbose_name="Порядковый номер", default=0)
+    user = models.ForeignKey(User, verbose_name="Пользователь", on_delete=models.RESTRICT)
+    previous = models.ForeignKey('self', verbose_name="Предыдущий статус", null=True, on_delete=models.RESTRICT,
+                                 related_name="next_status")
+    next = models.ForeignKey('self', verbose_name="Следующий статус", null=True, on_delete=models.RESTRICT,
+                             related_name="previous_status")
+
+    group = models.ForeignKey('StatusGroup', verbose_name="Группа", on_delete=models.RESTRICT, related_name="statuses",
+                              null=True)
+    is_initial = models.BooleanField(verbose_name="Является начальным")
+    is_final = models.BooleanField(verbose_name="Является последним")
+
+    class Meta:
+        ordering = ["order", "id"]
+        verbose_name = "Пользовательский статус"
+        verbose_name_plural = "Пользовательские статусы"
+
+    def __str__(self):
+        return self.name
+
+
+class StatusGroup(models.Model):
+    order = models.IntegerField(verbose_name="Порядковый номер", default=0)
+    name = models.CharField(verbose_name="Название", max_length=500)
+    user = models.ForeignKey(User, verbose_name="Пользователь", on_delete=models.RESTRICT)
+
+    class Meta:
+        ordering = ["order", "id"]
+        verbose_name = "Пользовательская группа статусов"
+        verbose_name_plural = "Пользовательские группы статусов"
+
+    def __str__(self):
+        return "%s (%s)" % (self.name, self.user.username)
+
+    @property
+    def display_name(self):
         return self.name

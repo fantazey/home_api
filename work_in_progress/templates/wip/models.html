@@ -56,34 +56,20 @@ $(function() {
         </div>
     {% endfor %}
     <div class="two wide column">
-        {% if units_painted is not None %}
-            <div>Покрашено - {{ units_painted }}</div>
-        {% endif %}
-        {% if units_unpainted is not None %}
-            <div>Не покрашено - {{ units_unpainted }}</div>
-        {% endif %}
-        {% if units_unassembled is not None %}
-            <div>Не собрано - {{ units_unassembled }}</div>
-        {% endif %}
-        {% if units_to_buy is not None %}
-            <div>Не куплено - {{ units_to_buy }}</div>
-        {% endif %}
+        {% for status_group, status_group_stats in units_count_by_status_group.items %}
+            {% if status_group_stats is not None and status_group_stats.model is not None %}
+                <div>{{ status_group }} - {{ status_group_stats.model }}</div>
+            {% endif %}
+        {% endfor %}
         {% if units_total is not None %}
             <div>Всего - {{ units_total }}</div>
         {% endif %}
 
-        {% if terrain_painted is not None %}
-            <div>Террейна покрашено - {{ terrain_painted }}</div>
-        {% endif %}
-        {% if terrain_unpainted is not None %}
-            <div>Террейна не покрашено - {{ terrain_unpainted }}</div>
-        {% endif %}
-        {% if terrain_unassembled is not None %}
-            <div>Террейна не собрано - {{ terrain_unassembled }}</div>
-        {% endif %}
-        {% if terrain_to_buy is not None %}
-            <div>Террейна не куплено - {{ terrain_to_buy }}</div>
-        {% endif %}
+        {% for status_group, status_group_stats in units_count_by_status_group.items %}
+            {% if status_group_stats is not None and status_group_stats.terrain is not None %}
+                <div>{{ status_group }}(террейн) - {{ status_group_stats.terrain }}</div>
+            {% endif %}
+        {% endfor %}
         {% if terrain_total is not None %}
             <div>Террейна всего - {{ terrain_total }}</div>
         {% endif %}
@@ -118,8 +104,8 @@ $(function() {
                     <a href="{% url 'wip:progress' user.username model.id %}">{{ model.name }}</a>
                 </a>
                 <div class="meta">
-                    {{ model.get_status_display }} | {{ model.get_hours_spent|duration }}
-                    {% if model.status != model.Status.WISHED and model.status != model.Status.DONE %}
+                    {{ model.user_status.name }} | {{ model.get_hours_spent|duration }}
+                    {% if not model.user_status.is_initial and not model.user_status.is_final %}
                         | лежит уже {{ model.get_days_since_buy }} дней
                     {% endif %}
                 </div>
@@ -145,7 +131,22 @@ $(function() {
                         <i class="pencil icon"></i>
                         Редактировать
                     </a>
-                    {% include 'wip/widgets/model_actions.html' %}
+                    {% if model.user_status.next %}
+                        <div>
+                            <a href="{% url 'wip:model_status_action' user.username model.id model.user_status.next.slug %}">
+                                <i class="arrow alternate circle up outline icon"></i>
+                                {{ model.user_status.next.transition_title }}
+                            </a>
+                        </div>
+                    {% endif %}
+                    {% if not model.user_status.is_final %}
+                        <div>
+                            <a href="{% url 'wip:add_progress' user.username model.id %}">
+                                <i class="clock outline icon"></i>
+                                Записать работу
+                            </a>
+                        </div>
+                    {% endif %}
                     <div style="margin-top: 30px">
                         <a href="{% url 'wip:delete_model' model.id %}">
                             <i class="trash alternate outline icon"></i>

@@ -43,7 +43,7 @@ urlpatterns = [
          views.delete_progress, name='delete_progress'),
 
     # update status actions
-    path('<str:username>/model/<int:model_id>/<str:status_action>',
+    path('<str:username>/model/<int:model_id>/<str:next_status>',
          login_required(views.WipModelStatusActions.as_view(), login_url='/wip/accounts/login'),
          name='model_status_action'),
 ]

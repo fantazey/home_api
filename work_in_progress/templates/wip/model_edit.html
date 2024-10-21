@@ -6,9 +6,6 @@
     {% include 'wip/widgets/form-field.html' with field=form.name %}
     {% include 'wip/widgets/form-field.html' with field=form.status %}
     {% include 'wip/widgets/form-field.html' with field=form.count %}
-    {% if form.in_inventory %}
-    {% include 'wip/widgets/form-field.html' with field=form.in_inventory %}
-    {% endif %}
     <div id="buy-date-field" class="field {{ buy_date_field_class }}">
         <label>{{ form.buy_date.label }}</label>
         {{ form.buy_date }}

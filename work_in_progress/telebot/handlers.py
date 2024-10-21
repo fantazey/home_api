@@ -9,8 +9,8 @@ from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 
 from .model_tools import get_user, update_model_status, get_model, get_user_models_paged, record_model_progress, \
-    save_image_to_progress, create_model, want_model, delete_model, get_last_model_progress, delete_progress
-from work_in_progress.models import Model
+    save_image_to_progress, create_model, delete_model, get_last_model_progress, delete_progress, \
+    get_status_list
 from work_in_progress.templatetags.wip_filters import duration
 from .hangar import set_light_value, set_light_full, set_light_low, set_light_mid, set_light_off, set_light_fade, \
     set_painted_count, set_unpainted_count, display_show_all, display_show_painted, display_show_unpainted, sync_time, \
@@ -226,9 +226,11 @@ async def handler_model_menu(update: Update, context: ContextTypes.DEFAULT_TYPE,
     return
 
 
-async def handler_model_change_status_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+@require_user
+async def handler_model_change_status_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, user: User):
     keyboard = []
-    for (status, text) in Model.stages():
+    statuses = await get_status_list(user)
+    for (status, text) in statuses:
         keyboard.append([InlineKeyboardButton(text, callback_data=f"model_change_status_{status}")])
     keyboard.append([InlineKeyboardButton('^', callback_data=f"model")])
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -356,7 +358,7 @@ async def handler_model_buy(update: Update, context: ContextTypes.DEFAULT_TYPE, 
 async def handler_model_want(update: Update, context: ContextTypes.DEFAULT_TYPE, user: User = None):
     p = re.compile(r"хочу ", flags=re.IGNORECASE)
     model_name = re.sub(p, "", update.message.text)
-    model_id = await want_model(user, model_name)
+    model_id = await create_model(user, model_name)
     await context.bot.send_message(chat_id=update.effective_chat.id, text="Модель сохранена")
     context.user_data["model_id"] = model_id
     await handler_model_menu(update, context)
@@ -416,6 +418,7 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update is None:
         return
     print(context.error)
+    print(context.error.with_traceback())
     await context.bot.send_message(chat_id=update.effective_chat.id, text="Error", parse_mode=PARSE_MODE)
 
 

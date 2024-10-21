@@ -29,15 +29,13 @@
                     {{ model.battlescribe_unit.name }} [{{ model.battlescribe_unit.bs_category.name }}]
                 {% endif %}
             </td>
-            <td>{{ model.get_status_display }}</td>
+            <td>{{ model.user_status.name }}</td>
             <td>
-                {% if model.status == model.Status.DONE %}
+                {% if model.user_status.is_final %}
                     Покрашена
-                {% elif model.status != model.Status.WISHED %}
+                {% elif not model.user_status.is_initial %}
                     <p>лежит уже {{ model.get_days_since_buy }} дней</p>
-                    {% if model.status != model.Status.IN_INVENTORY %}
-                        <p>потрачено {{ model.get_hours_spent|duration }}</p>
-                    {% endif %}
+                    <p>потрачено {{ model.get_hours_spent|duration }}</p>
                 {% endif %}
             </td>
         </tr>

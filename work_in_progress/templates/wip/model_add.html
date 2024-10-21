@@ -5,8 +5,8 @@
     {% include 'wip/widgets/form-field.html' with field=form.bs_kill_team %}
     {% include 'wip/widgets/form-field.html' with field=form.name %}
     {% include 'wip/widgets/form-field.html' with field=form.count %}
-    {% include 'wip/widgets/form-field.html' with field=form.in_inventory %}
-    <div id="buy-date-field" class="field disabled hidden">
+    {% include 'wip/widgets/form-field.html' with field=form.status %}
+    <div id="buy-date-field" class="field hidden">
         <label>{{ form.buy_date.label }}</label>
         {{ form.buy_date }}
     </div>
