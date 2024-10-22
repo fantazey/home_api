@@ -17,9 +17,9 @@
 <tbody>
     {% for model in models %}
         <tr>
-            <td><a href="{% url 'wip:models' model.user.username %}">{{ model.user.username }}</a></td>
+            <td><a href="{% url 'wip:model:models' model.user.username %}">{{ model.user.username }}</a></td>
             <td>
-                <a href="{% url 'wip:progress' model.user.username model.id %}"> {{ model.name }}</a>
+                <a href="{% url 'wip:model:progress' model.user.username model.id %}"> {{ model.name }}</a>
                 {% if model.get_last_image_url %}
                     {% include 'wip/widgets/model_image.html' %}
                 {% endif %}

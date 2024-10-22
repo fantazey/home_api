@@ -86,7 +86,7 @@ $(function() {
 </div>
 <div style="margin: 10px"></div>
 {% if request.user.is_authenticated and request.user == user %}
-<a href="{% url 'wip:add_model' %}">
+<a href="{% url 'wip:model:add_model' %}">
 <i class="icon plus square outline"></i>
     Добавить
 </a>
@@ -101,7 +101,7 @@ $(function() {
             {% endif %}
             <div class="content">
                 <a class="header" href="">
-                    <a href="{% url 'wip:progress' user.username model.id %}">{{ model.name }}</a>
+                    <a href="{% url 'wip:model:progress' user.username model.id %}">{{ model.name }}</a>
                 </a>
                 <div class="meta">
                     {{ model.user_status.name }} | {{ model.get_hours_spent|duration }}
@@ -127,13 +127,13 @@ $(function() {
             </div>
             <div class="extra content">
                 {% if request.user.is_authenticated and request.user == user %}
-                    <a href="{% url 'wip:edit_model' model.id %}">
+                    <a href="{% url 'wip:model:edit_model' model.id %}">
                         <i class="pencil icon"></i>
                         Редактировать
                     </a>
                     {% if model.user_status.next %}
                         <div>
-                            <a href="{% url 'wip:model_status_action' user.username model.id model.user_status.next.slug %}">
+                            <a href="{% url 'wip:model:model_status_action' user.username model.id model.user_status.next.slug %}">
                                 <i class="arrow alternate circle up outline icon"></i>
                                 {{ model.user_status.next.transition_title }}
                             </a>
@@ -141,14 +141,14 @@ $(function() {
                     {% endif %}
                     {% if not model.user_status.is_final %}
                         <div>
-                            <a href="{% url 'wip:add_progress' user.username model.id %}">
+                            <a href="{% url 'wip:model:add_progress' user.username model.id %}">
                                 <i class="clock outline icon"></i>
                                 Записать работу
                             </a>
                         </div>
                     {% endif %}
                     <div style="margin-top: 30px">
-                        <a href="{% url 'wip:delete_model' model.id %}">
+                        <a href="{% url 'wip:model:delete_model' model.id %}">
                             <i class="trash alternate outline icon"></i>
                             Удалить
                         </a>

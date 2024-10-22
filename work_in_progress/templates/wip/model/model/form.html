@@ -1,6 +1,6 @@
 {% extends 'wip/base_form.html' %}
 {% block back_link %}
-<a href="{% url 'wip:models' request.user.username %}">Назад</a>
+<a href="{% url 'wip:model:models' request.user.username %}">Назад</a>
 {% endblock back_link %}
 {% block script %}
 <script>

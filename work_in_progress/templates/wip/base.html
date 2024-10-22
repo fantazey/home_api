@@ -8,14 +8,19 @@
 <script src="{% static '/wip/semantic/semantic.min.js' %}"></script>
 </head>
 <body style="padding-left: 10px; padding-right: 10px">
-    <div class="ui menu inverted item five">
+    <div class="ui menu inverted item six">
         {% if request.user.is_authenticated %}
-            <a class="item" href="{% url 'wip:models' request.user.username %}">Модели {{ request.user.username }}</a>
+            <a class="item" href="{% url 'wip:model:models' request.user.username %}">Модели {{ request.user.username }}</a>
         {% else %}
             <div class="item"></div>
         {% endif %}
         {% if request.user.is_authenticated %}
-            <a class="item" href="{% url 'wip:inventory' %}">Инвентарь</a>
+            <a class="item" href="{% url 'wip:inventory:inventory' %}">Инвентарь</a>
+        {% else %}
+            <div class="item"></div>
+        {% endif %}
+        {% if request.user.is_authenticated %}
+            <a class="item" href="{% url 'wip:manage:manage' %}">Управление</a>
         {% else %}
             <div class="item"></div>
         {% endif %}

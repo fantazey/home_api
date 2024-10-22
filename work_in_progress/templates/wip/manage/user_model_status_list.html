@@ -1,0 +1,47 @@
+{% extends 'wip/base.html' %}
+{% load wip_filters %}
+{% load static %}
+{% block content %}
+<h2>
+    Настройки статусов {{ user.username }}
+</h2>
+<div class="ui grid relaxed form ui">
+    <h4>
+        Статусы
+    </h4>
+    <table>
+        <tr>
+            <td>Название</td>
+            <td>Запись в лог при переходе в статус</td>
+            <td>Порядок сортировки</td>
+            <td>Предыдущий статус</td>
+            <td>Следующий статус</td>
+            <td>Группа</td>
+            <td>Начальный</td>
+            <td>Конечный</td>
+            <td>Действия</td>
+        </tr>
+        {% for s in user_model_statuses %}
+            <tr>
+                <td>{{ s.name }}</td>
+                <td>{{ s.transition_title }}</td>
+                <td>{{ s.order }}</td>
+                <td>{{ s.previous }}</td>
+                <td>{{ s.next }}</td>
+                <td>{{ s.group }}</td>
+                <td>{{ s.is_initial }}</td>
+                <td>{{ s.is_final }}</td>
+                <td>
+                    <div>
+                        <a href="{% url 'wip:manage:manage_status' %}"></a>
+                    </div>
+                    <div>
+                        
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
+    </table>
+</div>
+{% include 'wip/widgets/image_modal.html' %}
+{% endblock %}

@@ -30,7 +30,7 @@ $(function() {
 })
 </script>
 {% if request.user.is_authenticated %}
-        <a class="ui button" href="{% url 'wip:inventory_manage' %}">Управление</a>
+    <a class="ui button" href="{% url 'wip:inventory:inventory_manage' %}">Управление</a>
 {% endif %}
 <div class="ui grid relaxed form ui">
     <div class="three wide column">

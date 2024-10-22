@@ -5,7 +5,9 @@ from django.contrib.auth.models import User
 from django.db.models import Max
 from django.utils import timezone
 
-from work_in_progress.models import Model, ModelProgress, ModelImage, Artist, UserModelStatus
+from work_in_progress.models import Artist
+from work_in_progress.model.models import Model, ModelProgress, ModelImage
+from work_in_progress.manage.models import UserModelStatus
 from work_in_progress.templatetags.wip_filters import duration
 
 

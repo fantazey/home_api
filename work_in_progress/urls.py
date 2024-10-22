@@ -1,5 +1,4 @@
-from django.contrib.auth.decorators import login_required
-from django.urls import path, reverse_lazy
+from django.urls import path, reverse_lazy, include
 from . import views
 
 LOGIN_URL = reverse_lazy('wip:login')
@@ -14,37 +13,14 @@ urlpatterns = [
 
     # index
     path('', views.WipIndexView.as_view(), name='index'),
+
+    # manage
+    path('manage/', include('work_in_progress.manage.urls')),
+
     # inventory
-    path('inventory',
-         login_required(views.WipUserInventory.as_view(), login_url='/wip/accounts/login'),
-         name='inventory'),
-    path('inventory/manage',
-         login_required(views.WipUserInventoryManage.as_view(), login_url='/wip/accounts/login'),
-         name='inventory_manage'),
+    path('inventory/', include('work_in_progress.inventory.urls')),
+
     # model
-    path('<str:username>/model', views.WipUserModels.as_view(), name='models'),
-    path('model/add',
-         login_required(views.WipModelCreate.as_view(), login_url=LOGIN_URL),
-         name='add_model'),
-    path('model/<int:model_id>/edit',
-         login_required(views.WipModelUpdate.as_view(), login_url=LOGIN_URL),
-         name='edit_model'),
-    path('model/<int:model_id>/delete', views.delete_model, name='delete_model'),
-
-    # progress
-    path('<str:username>/model/<int:model_id>/progress', views.WipModelProgress.as_view(), name='progress'),
-    path('<str:username>/model/<int:model_id>/progress/add',
-         login_required(views.WipModelProgressCreate.as_view(), login_url='/wip/accounts/login'),
-         name='add_progress'),
-    path('<str:username>/model/<int:model_id>/progress/<int:progress_id>/edit',
-         login_required(views.WipModelProgressUpdate.as_view(), login_url='/wip/accounts/login'),
-         name='edit_progress'),
-    path('<str:username>/model/<int:model_id>/progress/<int:progress_id>/delete',
-         views.delete_progress, name='delete_progress'),
-
-    # update status actions
-    path('<str:username>/model/<int:model_id>/<str:next_status>',
-         login_required(views.WipModelStatusActions.as_view(), login_url='/wip/accounts/login'),
-         name='model_status_action'),
+    path('models/', include('work_in_progress.model.urls')),
 ]
 

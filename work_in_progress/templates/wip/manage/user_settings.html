@@ -1,0 +1,20 @@
+{% extends 'wip/base.html' %}
+{% load wip_filters %}
+{% load static %}
+{% block content %}
+<h2>
+    Пользовательские настройки {{ user.username }}
+</h2>
+<div class="ui grid relaxed form ui">
+    {{ form.as_p }}
+</div>
+<div class="ui grid relaxed ui">
+    <div class="ui item">
+        <a href="{%  url 'wip:manage:manage_status' %}">Управление статусами</a>
+    </div>
+    <div class="ui item">
+        <a href="{%  url 'wip:manage:manage_status_groups' %}">Управление группами статусов</a>
+    </div>
+</div>
+{% include 'wip/widgets/image_modal.html' %}
+{% endblock %}

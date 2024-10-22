@@ -1,6 +1,6 @@
 {% extends 'wip/base_form.html' %}
 {% block back_link %}
-<a href="{% url 'wip:progress' user.username model.id %}">Назад</a>
+<a href="{% url 'wip:model:progress' user.username model.id %}">Назад</a>
 {% endblock back_link %}
 {% block form_fields %}
 {% include 'wip/widgets/form-field.html' with field=form.title %}

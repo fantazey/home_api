@@ -2,7 +2,7 @@ from os import walk
 from os import path
 
 from bs4 import BeautifulSoup
-from work_in_progress.models import KillTeam, KillTeamOperative
+from work_in_progress.battlescribe.models import KillTeam, KillTeamOperative
 
 SOURCE_PATH = path.join(path.dirname(path.abspath(__file__)), 'fixtures', 'kill-team')
 
