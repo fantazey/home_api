@@ -1,7 +1,7 @@
 import socket
 from django.utils import timezone
 
-socket_path = "/home/pi/Projects/home-api/work_in_progress/server/hangar.sock"
+socket_path = "/tmp/hangar.sock"
 
 D_SHUFFLE = 0  # переключение всех режимов по таймауту
 D_YEAR = 1  # показать год

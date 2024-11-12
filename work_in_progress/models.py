@@ -323,13 +323,13 @@ class UserModelStatus(models.Model):
                                         max_length=500, null=True, blank=True)
     order = models.IntegerField(verbose_name="Порядковый номер", default=0)
     user = models.ForeignKey(User, verbose_name="Пользователь", on_delete=models.RESTRICT)
-    previous = models.ForeignKey('self', verbose_name="Предыдущий статус", null=True, on_delete=models.RESTRICT,
-                                 related_name="next_status")
-    next = models.ForeignKey('self', verbose_name="Следующий статус", null=True, on_delete=models.RESTRICT,
+    previous = models.ForeignKey('self', verbose_name="Предыдущий статус", null=True, blank=True,
+                                 on_delete=models.RESTRICT, related_name="next_status")
+    next = models.ForeignKey('self', verbose_name="Следующий статус", null=True, blank=True, on_delete=models.RESTRICT,
                              related_name="previous_status")
 
     group = models.ForeignKey('StatusGroup', verbose_name="Группа", on_delete=models.RESTRICT, related_name="statuses",
-                              null=True)
+                              null=True, blank=True)
     is_initial = models.BooleanField(verbose_name="Является начальным")
     is_final = models.BooleanField(verbose_name="Является последним")
 
