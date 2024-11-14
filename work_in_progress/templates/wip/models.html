@@ -105,7 +105,7 @@ $(function() {
                     <a href="{% url 'wip:progress' user.username model.id %}">{{ model.name }}</a>
                 </a>
                 <div class="meta">
-                    {{ model.user_status.name }} | {{ model.get_hours_spent|duration }}
+                    <b style="color: #2d2d2d">{{ model.user_status.name }}</b> | {{ model.get_hours_spent|duration }}
                     {% if not model.user_status.is_initial and not model.user_status.is_final %}
                         | лежит уже {{ model.get_days_since_buy }} дней
                     {% endif %}
@@ -113,16 +113,28 @@ $(function() {
                 <div class="description">
                     {% if model.terrain == True %}
                         <div style="color: lightcoral">Террейн</div>
+                        <div style="margin: 10px"></div>
                     {% endif %}
                     {% if model.unit_count > 1 %}
                         <div>Юнитов в модели: {{ model.unit_count }}</div>
+                        <div style="margin: 10px"></div>
+                    {% endif %}
+                    {% if model.groups.exists %}
+                        <div>Группы:
+                            {% for group in model.groups.all %}
+                                <span>{{ group.name }}</span>
+                            {% endfor %}
+                        </div>
+                        <div style="margin: 10px"></div>
                     {% endif %}
                     {% if model.battlescribe_unit %}
                         <div>Категория BS: {{ model.battlescribe_unit.bs_category.name }}</div>
                         <div>Модель BS: {{ model.battlescribe_unit.name }}</div>
+                        <div style="margin: 10px"></div>
                     {% endif %}
                     {% if model.kill_team %}
                         <div>Киллтим: {{ model.kill_team.name }}</div>
+                        <div style="margin: 10px"></div>
                     {% endif %}
                 </div>
             </div>
