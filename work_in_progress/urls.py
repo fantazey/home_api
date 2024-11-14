@@ -38,7 +38,7 @@ urlpatterns = [
     path('manage/status_group/<int:status_group_id>/delete',
          login_required(views.delete_user_status_group, login_url='/wip/accounts/login'),
          name='manage_status_group_delete'),
-    # todo:
+
     # manage status
     path('manage/status/list',
          login_required(views.WipUserStatusManage.as_view(), login_url='/wip/accounts/login'),
@@ -52,6 +52,20 @@ urlpatterns = [
     path('manage/status/<int:status_id>/delete',
          login_required(views.delete_user_status, login_url='/wip/accounts/login'),
          name='manage_status_delete'),
+
+    # manage model group
+    path('manage/model_group/list',
+         login_required(views.WipUserModelGroupManage.as_view(), login_url='/wip/accounts/login'),
+         name='manage_model_group_list'),
+    path('manage/model_group/add',
+         login_required(views.WipUserModelGroupManageCreate.as_view(), login_url='/wip/accounts/login'),
+         name='manage_model_group_add'),
+    path('manage/model_group/<int:model_group_id>/edit',
+         login_required(views.WipUserModelGroupManageUpdate.as_view(), login_url='/wip/accounts/login'),
+         name='manage_model_group_edit'),
+    path('manage/model_group/<int:model_group_id>/delete',
+         login_required(views.delete_user_model_group, login_url='/wip/accounts/login'),
+         name='manage_model_group_delete'),
 
     # model
     path('<str:username>/model', views.WipUserModels.as_view(), name='models'),

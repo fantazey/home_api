@@ -96,8 +96,10 @@ class Model(models.Model):
             ]
 
     name = models.CharField(verbose_name="Название модели", max_length=500)
-    battlescribe_unit = models.ForeignKey(BSUnit, verbose_name="Из каталога BS", on_delete=models.RESTRICT, null=True)
-    kill_team = models.ForeignKey('KillTeam', verbose_name="KillTeam каталога BS", on_delete=models.RESTRICT, null=True)
+    battlescribe_unit = models.ForeignKey(BSUnit, verbose_name="Из каталога BS", on_delete=models.RESTRICT, null=True,
+                                          blank=True)
+    kill_team = models.ForeignKey('KillTeam', verbose_name="KillTeam каталога BS", on_delete=models.RESTRICT,
+                                  null=True, blank=True)
     status = models.CharField(verbose_name="Статус", max_length=200, choices=Status.choices, default=Status.WISHED)
     user_status = models.ForeignKey('UserModelStatus', on_delete=models.RESTRICT, verbose_name="Статус",
                                     related_name="model_status", null=True)
@@ -109,6 +111,7 @@ class Model(models.Model):
     unit_count = models.IntegerField(verbose_name="Количество миниатюр", default=1, null=True, blank=True,
                                      validators=[MinValueValidator(limit_value=1)])
     terrain = models.BooleanField(verbose_name="Террейн", default=False)
+    groups = models.ManyToManyField('ModelGroup', verbose_name="Группы", related_name="model_group")
 
     class Meta:
         ordering = ["name"]
@@ -357,4 +360,17 @@ class StatusGroup(models.Model):
 
     @property
     def display_name(self):
+        return self.name
+
+
+class ModelGroup(models.Model):
+    name = models.CharField(verbose_name="Название", max_length=500)
+    user = models.ForeignKey(User, verbose_name="Пользователь", on_delete=models.RESTRICT)
+
+    class Meta:
+        ordering = ['id']
+        verbose_name = "Группа моделей"
+        verbose_name_plural = "Группы моделей"
+
+    def __str__(self):
         return self.name

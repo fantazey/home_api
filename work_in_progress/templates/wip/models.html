@@ -30,6 +30,7 @@ $(function() {
         event.preventDefault();
         const query = splitQuery();
         query['status'] = $('#id_status').val();
+        query['group'] = $('#id_group').val();
         query['page_size'] = $('#id_page_size').val();
         location.href = glueQuery(query);
     })

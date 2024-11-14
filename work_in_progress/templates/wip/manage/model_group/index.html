@@ -1,0 +1,44 @@
+{% extends 'wip/base.html' %}
+{% load wip_filters %}
+{% load static %}
+{% block content %}
+<h2>
+    Группы моделей пользователя {{ user.username }}
+</h2>
+<div style="margin: 10px"></div>
+<div>
+    <a href="{% url 'wip:manage' %}">Назад</a>
+</div>
+{% if request.user.is_authenticated and request.user == user %}
+<a href="{% url 'wip:manage_model_group_add' %}">
+<i class="icon plus square outline"></i>
+    Добавить
+</a>
+{% endif %}
+<table class="ui table celled">
+    <thead>
+        <tr>
+            <th>Название</th>
+            <th>Действия</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for record in items %}
+            <tr>
+                <td>
+                    <div>
+                        {{ record.name }}
+                    </div>
+                </td>
+                <td>
+                    <div>
+                        <a href="{% url 'wip:manage_model_group_edit' record.id %}">Редактировать</a>
+                        <a href="{% url 'wip:manage_model_group_delete' record.id %}">Удалить</a>
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

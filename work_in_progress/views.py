@@ -13,9 +13,10 @@ from django.views.generic import ListView, View
 from django.views.generic.edit import FormView
 
 from .forms import AddModelForm, LoginForm, AddProgressForm, RegistrationForm, EditModelForm, \
-    ModelFilterForm, WorkMapFilterForm, PaintInventoryManageForm, InventoryFilterForm, StatusGroupForm, UserStatusForm
+    ModelFilterForm, WorkMapFilterForm, PaintInventoryManageForm, InventoryFilterForm, StatusGroupForm, \
+    UserStatusForm, ModelGroupForm
 from .models import Model, ModelProgress, ModelImage, Artist, PaintInventory, Paint, PaintVendor, UserModelStatus, \
-    StatusGroup
+    StatusGroup, ModelGroup
 
 
 class WipLoginView(LoginView):
@@ -105,6 +106,8 @@ class WipUserModels(ListView):
         if form.is_valid():
             if form.cleaned_data['status']:
                 user_models = user_models.filter(user_status=form.cleaned_data['status'])
+            if form.cleaned_data['group']:
+                user_models = user_models.filter(groups__in=[form.cleaned_data['group']])
         if self.request.user != user:
             user_models = user_models.filter(hidden=False)
         return user_models
@@ -265,13 +268,18 @@ class WipModelUpdate(FormView):
             'bs_category': model.battlescribe_unit.bs_category if model.battlescribe_unit is not None else None,
             'bs_kill_team': model.kill_team,
             'hidden': model.hidden,
-            'count': model.unit_count
+            'count': model.unit_count,
+            'groups': model.groups.all()
         }
         return initial
 
     def form_valid(self, form):
         model = self.get_model()
         model.name = form.cleaned_data['name']
+        if form.cleaned_data['groups']:
+            model.groups.clear()
+            for group in form.cleaned_data['groups']:
+                model.groups.add(group)
         model.battlescribe_unit = form.cleaned_data['bs_unit']
         model.kill_team = form.cleaned_data['bs_kill_team']
         model.buy_date = form.cleaned_data['buy_date']
@@ -677,3 +685,70 @@ def delete_user_status(request, status_id):
     record = UserModelStatus.objects.get(id=status_id, user=request.user)
     record.delete()
     return redirect(reverse('wip:manage_status_list'))
+
+
+class WipUserModelGroupManage(ListView):
+    model = ModelGroup
+    template_name = 'wip/manage/model_group/index.html'
+    context_object_name = 'items'
+
+    def get_queryset(self):
+        return ModelGroup.objects.filter(user=self.request.user)
+
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        context['user'] = self.request.user
+        return context
+
+
+class WipUserModelGroupManageCreate(FormView):
+    form_class = ModelGroupForm
+    template_name = 'wip/manage/model_group/add.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Добавление группы моделей'
+        context['submit_url'] = reverse('wip:manage_model_group_add')
+        context['submit_label'] = 'Добавить'
+        return context
+
+    def form_valid(self, form):
+        record = ModelGroup(name=form.cleaned_data['name'], user=self.request.user)
+        record.save()
+        return redirect(reverse('wip:manage_model_group_list'))
+
+
+class WipUserModelGroupManageUpdate(FormView):
+    form_class = ModelGroupForm
+    template_name = 'wip/manage/model_group/edit.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Редактирование группы моделей'
+        context['submit_url'] = reverse('wip:manage_model_group_edit',
+                                        kwargs={'model_group_id': self.kwargs['model_group_id']})
+        context['submit_label'] = 'Сохранить'
+        return context
+
+    def get_record(self):
+        return ModelGroup.objects.filter(user=self.request.user, id=self.kwargs['model_group_id']).first()
+
+    def get_initial(self):
+        record = self.get_record()
+        initial = {
+            'name': record.name
+        }
+        return initial
+
+    def form_valid(self, form):
+        record = self.get_record()
+        record.name = form.cleaned_data['name']
+        record.save()
+        return redirect(reverse('wip:manage_model_group_list'))
+
+
+@login_required(login_url='/wip/accounts/login')
+def delete_user_model_group(request, model_group_id):
+    record = ModelGroup.objects.get(id=model_group_id, user=request.user)
+    record.delete()
+    return redirect(reverse('wip:manage_model_group_list'))

@@ -4,7 +4,8 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.contrib.auth.forms import AuthenticationForm
 
-from .models import BSCategory, BSUnit, Paint, PaintVendor, PaintInventory, KillTeam, UserModelStatus, StatusGroup
+from .models import BSCategory, BSUnit, Paint, PaintVendor, PaintInventory, KillTeam, UserModelStatus, StatusGroup, \
+    ModelGroup
 
 
 class AddModelForm(forms.Form):
@@ -56,14 +57,16 @@ class AddModelForm(forms.Form):
                                 widget=forms.Select(attrs={'class': 'ui fluid search selection dropdown'}),
                                 required=False)
     bs_kill_team = BSKillTeamChoiceField(label="КТ отряд из BattleScribe",
-                                      queryset=KillTeam.objects.all(),
-                                      widget=forms.Select(attrs={'class': 'ui fluid search selection dropdown'}),
-                                      required=False)
+                                         queryset=KillTeam.objects.all(),
+                                         widget=forms.Select(attrs={'class': 'ui fluid search selection dropdown'}),
+                                         required=False)
     count = forms.IntegerField(label="Количество миниатюр", required=False, initial=1)
+    group = forms.ModelChoiceField(label="Группа", required=False, queryset=None)
 
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['status'].queryset = UserModelStatus.objects.filter(user=user)
+        self.fields['group'].queryset = ModelGroup.objects.filter(user=user)
 
 
 class EditModelForm(forms.Form):
@@ -80,21 +83,23 @@ class EditModelForm(forms.Form):
                                              widget=forms.Select(attrs={'class': 'ui fluid search selection dropdown'}),
                                              required=False)
     bs_kill_team = AddModelForm.BSKillTeamChoiceField(label="КТ отряд из BattleScribe",
-                                                   queryset=KillTeam.objects.all(),
-                                                   widget=forms.Select(
-                                                       attrs={'class': 'ui fluid search selection dropdown'}
-                                                   ),
-                                                   required=False)
+                                                      queryset=KillTeam.objects.all(),
+                                                      widget=forms.Select(
+                                                          attrs={'class': 'ui fluid search selection dropdown'}
+                                                      ),
+                                                      required=False)
     status = forms.ModelChoiceField(label="Статус", queryset=None)
     images = forms.ImageField(label="Картиночки",
                               widget=forms.ClearableFileInput(attrs={'multiple': True}),
                               required=False)
     hidden = forms.BooleanField(label="Скрыть", required=False, initial=False)
     count = forms.IntegerField(label="Количество миниатюр", required=False, initial=1)
+    groups = forms.ModelMultipleChoiceField(label="Группы", required=False, queryset=None)
 
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['status'].queryset = UserModelStatus.objects.filter(user=user)
+        self.fields['groups'].queryset = ModelGroup.objects.filter(user=user)
 
 
 class AddProgressForm(forms.Form):
@@ -131,11 +136,13 @@ class RegistrationForm(forms.Form):
 
 class ModelFilterForm(forms.Form):
     status = forms.ModelChoiceField(label="Статус", required=False, queryset=None, blank=True)
+    group = forms.ModelChoiceField(label="Группа", required=False, queryset=None, blank=True)
     page_size = forms.ChoiceField(label="На странице", choices=((x, x) for x in [12, 24, 900]), required=False)
 
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['status'].queryset = UserModelStatus.objects.filter(user=user)
+        self.fields['group'].queryset = ModelGroup.objects.filter(user=user)
 
 
 YEAR_CHOICES = ((x, x) for x in range(date.today().year, 2021, -1))
@@ -269,3 +276,7 @@ class UserStatusForm(forms.Form):
         self.fields['previous'].queryset = UserModelStatus.objects.filter(user=user).order_by('order')
         self.fields['next'].queryset = UserModelStatus.objects.filter(user=user).order_by('order')
         self.fields['group'].queryset = StatusGroup.objects.filter(user=user).order_by('order')
+
+
+class ModelGroupForm(forms.Form):
+    name = forms.CharField(label="Название")
