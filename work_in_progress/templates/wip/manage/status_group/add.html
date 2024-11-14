@@ -1,0 +1,5 @@
+{% extends 'wip/manage/status_group/form.html' %}
+{% block form_fields %}
+    {% include 'wip/widgets/form-field.html' with field=form.name %}
+    {% include 'wip/widgets/form-field.html' with field=form.order %}
+{% endblock form_fields %}

@@ -1,0 +1,50 @@
+{% extends 'wip/base.html' %}
+{% load wip_filters %}
+{% load static %}
+{% block content %}
+<h2>
+    Группы статусов пользователя {{ user.username }}
+</h2>
+<div style="margin: 10px"></div>
+<div>
+    <a href="{% url 'wip:manage' %}">Назад</a>
+</div>
+{% if request.user.is_authenticated and request.user == user %}
+<a href="{% url 'wip:manage_status_group_add' %}">
+<i class="icon plus square outline"></i>
+    Добавить
+</a>
+{% endif %}
+<table class="ui table">
+    <thead>
+        <tr>
+            <td>Название</td>
+            <td>Порядок сортировки</td>
+            <td>Действия</td>
+        </tr>
+    </thead>
+    <tbody>
+        {% for record in items %}
+            <tr>
+                <td>
+                    <div>
+                        {{ record.name }}
+                    </div>
+                </td>
+                <td>
+                    <div>
+                        {{ record.order }}
+                    </div>
+                </td>
+                <td>
+                    <div>
+                        <a href="{% url 'wip:manage_status_group_edit' record.id %}">Редактировать</a>
+                        <a href="{% url 'wip:manage_status_group_delete' record.id %}">Удалить</a>
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

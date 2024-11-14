@@ -4,7 +4,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.contrib.auth.forms import AuthenticationForm
 
-from .models import BSCategory, BSUnit, Paint, PaintVendor, PaintInventory, KillTeam, UserModelStatus
+from .models import BSCategory, BSUnit, Paint, PaintVendor, PaintInventory, KillTeam, UserModelStatus, StatusGroup
 
 
 class AddModelForm(forms.Form):
@@ -246,3 +246,26 @@ class InventoryFilterForm(forms.Form):
             if cleaned_data['status'] == 'has':
                 cleaned_data['has'] = True
         return cleaned_data
+
+
+class StatusGroupForm(forms.Form):
+    name = forms.CharField(label="Название")
+    order = forms.IntegerField(label="Порядок сортировки")
+
+
+class UserStatusForm(forms.Form):
+    name = forms.CharField(label="Название")
+    slug = forms.CharField(label="Слаг латиницей для использования в боте")
+    transition_title = forms.CharField(label="Заголовок в прогрессе модели при переходе в статус")
+    order = forms.IntegerField(label="Порядок сортировки")
+    previous = forms.ModelChoiceField(label="Предыдущий статус", queryset=None, required=False)
+    next = forms.ModelChoiceField(label="Следующий статус", queryset=None, required=False)
+    group = forms.ModelChoiceField(label="Группа", queryset=None, required=False)
+    is_initial = forms.BooleanField(label="Является начальным", required=False)
+    is_final = forms.BooleanField(label="Является последним", required=False)
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['previous'].queryset = UserModelStatus.objects.filter(user=user).order_by('order')
+        self.fields['next'].queryset = UserModelStatus.objects.filter(user=user).order_by('order')
+        self.fields['group'].queryset = StatusGroup.objects.filter(user=user).order_by('order')

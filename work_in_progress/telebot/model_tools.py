@@ -107,7 +107,7 @@ def save_image_to_progress(user: User, model_id: int, model_progress_id: int, im
 
 @sync_to_async
 def create_model(user: User, name: str) -> int:
-    status = UserModelStatus.objects.get(user=user, is_initial=True)
+    status = UserModelStatus.objects.filter(user=user, is_initial=True).order_by('order').first()
     model = Model(name=name, user=user, user_status=status)
     model.save()
     return model.id

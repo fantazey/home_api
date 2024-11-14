@@ -348,7 +348,6 @@ async def handler_model_buy(update: Update, context: ContextTypes.DEFAULT_TYPE, 
     p = re.compile(r"купил ", flags=re.IGNORECASE)
     model_name = re.sub(p, "", update.message.text)
     model_id = await create_model(user, model_name)
-    print("Save model {}".format(model_id))
     await context.bot.send_message(chat_id=update.effective_chat.id, text="Модель сохранена")
     context.user_data["model_id"] = model_id
     await handler_model_menu(update, context)

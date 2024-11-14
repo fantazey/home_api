@@ -1,0 +1,12 @@
+{% extends 'wip/manage/status/form.html' %}
+{% block form_fields %}
+    {% include 'wip/widgets/form-field.html' with field=form.name %}
+    {% include 'wip/widgets/form-field.html' with field=form.slug %}
+    {% include 'wip/widgets/form-field.html' with field=form.transition_title %}
+    {% include 'wip/widgets/form-field.html' with field=form.order %}
+    {% include 'wip/widgets/form-field.html' with field=form.previous %}
+    {% include 'wip/widgets/form-field.html' with field=form.next %}
+    {% include 'wip/widgets/form-field.html' with field=form.group %}
+    {% include 'wip/widgets/form-field.html' with field=form.is_initial %}
+    {% include 'wip/widgets/form-field.html' with field=form.is_final %}
+{% endblock form_fields %}

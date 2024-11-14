@@ -28,3 +28,8 @@ def param_replace(context, **kwargs):
 @register.filter(name="get_field")
 def get_field(form: Form, field_name: str):
     return form.fields[field_name].get_bound_field(form, field_name)
+
+
+@register.filter(name='human_bool')
+def human_boolean(value: bool) -> str:
+    return "Да" if value else "Нет"

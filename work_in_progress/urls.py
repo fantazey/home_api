@@ -21,6 +21,38 @@ urlpatterns = [
     path('inventory/manage',
          login_required(views.WipUserInventoryManage.as_view(), login_url='/wip/accounts/login'),
          name='inventory_manage'),
+    # manage
+    path('manage',
+         login_required(views.manage, login_url='/wip/accounts/login'),
+         name='manage'),
+    # manage status_group
+    path('manage/status_group/list',
+         login_required(views.WipUserStatusGroupManage.as_view(), login_url='/wip/accounts/login'),
+         name='manage_status_group_list'),
+    path('manage/status_group/add',
+         login_required(views.WipUserStatusGroupManageCreate.as_view(), login_url='/wip/accounts/login'),
+         name='manage_status_group_add'),
+    path('manage/status_group/<int:status_group_id>/edit',
+         login_required(views.WipUserStatusGroupManageUpdate.as_view(), login_url='/wip/accounts/login'),
+         name='manage_status_group_edit'),
+    path('manage/status_group/<int:status_group_id>/delete',
+         login_required(views.delete_user_status_group, login_url='/wip/accounts/login'),
+         name='manage_status_group_delete'),
+    # todo:
+    # manage status
+    path('manage/status/list',
+         login_required(views.WipUserStatusManage.as_view(), login_url='/wip/accounts/login'),
+         name='manage_status_list'),
+    path('manage/status/add',
+         login_required(views.WipUserStatusManageCreate.as_view(), login_url='/wip/accounts/login'),
+         name='manage_status_add'),
+    path('manage/status/<int:status_id>/edit',
+         login_required(views.WipUserStatusManageUpdate.as_view(), login_url='/wip/accounts/login'),
+         name='manage_status_edit'),
+    path('manage/status/<int:status_id>/delete',
+         login_required(views.delete_user_status, login_url='/wip/accounts/login'),
+         name='manage_status_delete'),
+
     # model
     path('<str:username>/model', views.WipUserModels.as_view(), name='models'),
     path('model/add',

@@ -1,0 +1,13 @@
+{% extends 'wip/base.html' %}
+{% load wip_filters %}
+{% load static %}
+{% block content %}
+<h2>
+    Настройки пользователя {{ user.username }}
+</h2>
+<div>
+    <div><a href="{% url 'wip:manage_status_group_list' %}">Группы статусов</a></div>
+    <div><a href="{% url 'wip:manage_status_list' %}">Статусы</a></div>
+    <div><a href="">Категории</a></div>
+</div>
+{% endblock %}

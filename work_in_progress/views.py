@@ -13,7 +13,7 @@ from django.views.generic import ListView, View
 from django.views.generic.edit import FormView
 
 from .forms import AddModelForm, LoginForm, AddProgressForm, RegistrationForm, EditModelForm, \
-    ModelFilterForm, WorkMapFilterForm, PaintInventoryManageForm, InventoryFilterForm
+    ModelFilterForm, WorkMapFilterForm, PaintInventoryManageForm, InventoryFilterForm, StatusGroupForm, UserStatusForm
 from .models import Model, ModelProgress, ModelImage, Artist, PaintInventory, Paint, PaintVendor, UserModelStatus, \
     StatusGroup
 
@@ -214,7 +214,7 @@ class WipModelCreate(FormView):
 
     def form_valid(self, form):
         name = form.cleaned_data['name']
-        status = UserModelStatus.objects.get(user=self.request.user, is_initial=True)
+        status = UserModelStatus.objects.filter(user=self.request.user, is_initial=True).order_by('order').first()
         model = Model(name=name,
                       user=self.request.user,
                       user_status=status,
@@ -496,3 +496,184 @@ class WipUserInventoryManage(FormView):
         for paint in to_save:
             inventory.append(PaintInventory(user=self.request.user, paint=paint, has=has, wish=wish))
         return inventory
+
+
+@login_required(login_url='/wip/accounts/login')
+def manage(request):
+    return render(request, 'wip/manage/index.html')
+
+
+class WipUserStatusGroupManage(ListView):
+    model = StatusGroup
+    template_name = 'wip/manage/status_group/index.html'
+    context_object_name = 'items'
+
+    def get_queryset(self):
+        queryset = StatusGroup.objects.filter(user=self.request.user) \
+            .order_by('order')
+        return queryset
+
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        context['user'] = self.request.user
+        return context
+
+
+class WipUserStatusGroupManageCreate(FormView):
+    form_class = StatusGroupForm
+    template_name = 'wip/manage/status_group/add.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Добавление группы статусов'
+        context['submit_url'] = reverse('wip:manage_status_group_add')
+        context['submit_label'] = 'Добавить'
+        return context
+
+    def form_valid(self, form):
+        record = StatusGroup(name=form.cleaned_data['name'], user=self.request.user, order=form.cleaned_data['order'])
+        record.save()
+        return redirect(reverse('wip:manage_status_group_list'))
+
+
+class WipUserStatusGroupManageUpdate(FormView):
+    form_class = StatusGroupForm
+    template_name = 'wip/manage/status_group/edit.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Редактирование группы статусов'
+        context['submit_url'] = reverse('wip:manage_status_group_edit', kwargs={'status_group_id': self.kwargs['status_group_id']})
+        context['submit_label'] = 'Сохранить'
+        return context
+
+    def get_record(self):
+        return StatusGroup.objects.filter(user=self.request.user, id=self.kwargs['status_group_id']).first()
+
+    def get_initial(self):
+        record = self.get_record()
+        initial = {
+            'name': record.name,
+            'order': record.order
+        }
+        return initial
+
+    def form_valid(self, form):
+        record = self.get_record()
+        record.name = form.cleaned_data['name']
+        record.order = form.cleaned_data['order']
+        record.save()
+        return redirect(reverse('wip:manage_status_group_list'))
+
+
+@login_required(login_url='/wip/accounts/login')
+def delete_user_status_group(request, status_group_id):
+    record = StatusGroup.objects.get(id=status_group_id, user=request.user)
+    record.delete()
+    return redirect(reverse('wip:manage_status_group_list'))
+
+
+class WipUserStatusManage(ListView):
+    model = UserModelStatus
+    template_name = 'wip/manage/status/index.html'
+    context_object_name = 'items'
+
+    def get_queryset(self):
+        queryset = UserModelStatus.objects.filter(user=self.request.user) \
+            .order_by('order')
+        return queryset
+
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        context['user'] = self.request.user
+        return context
+
+
+class WipUserStatusManageCreate(FormView):
+    form_class = UserStatusForm
+    template_name = 'wip/manage/status/add.html'
+
+    def get_form_kwargs(self):
+        parent_kwargs = super().get_form_kwargs()
+        parent_kwargs['user'] = self.request.user
+        return parent_kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Добавление статуса'
+        context['submit_url'] = reverse('wip:manage_status_add')
+        context['submit_label'] = 'Добавить'
+        return context
+
+    def form_valid(self, form):
+        record = UserModelStatus(
+            name=form.cleaned_data['name'],
+            slug=form.cleaned_data['slug'],
+            transition_title=form.cleaned_data['transition_title'],
+            user=self.request.user,
+            order=form.cleaned_data['order'],
+            previous=form.cleaned_data['previous'],
+            next=form.cleaned_data['next'],
+            group=form.cleaned_data['group'],
+            is_initial=True if form.cleaned_data['is_initial'] else False,
+            is_final=True if form.cleaned_data['is_final'] else False,
+        )
+        record.save()
+        return redirect(reverse('wip:manage_status_list'))
+
+
+class WipUserStatusManageUpdate(FormView):
+    form_class = UserStatusForm
+    template_name = 'wip/manage/status/edit.html'
+
+    def get_form_kwargs(self):
+        parent_kwargs = super().get_form_kwargs()
+        parent_kwargs['user'] = self.request.user
+        return parent_kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Редактирование статуса'
+        context['submit_url'] = reverse('wip:manage_status_edit', kwargs={'status_id': self.kwargs['status_id']})
+        context['submit_label'] = 'Сохранить'
+        return context
+
+    def get_record(self) -> UserModelStatus:
+        return UserModelStatus.objects.filter(user=self.request.user, id=self.kwargs['status_id']).first()
+
+    def get_initial(self):
+        record = self.get_record()
+        initial = {
+            'name': record.name,
+            'slug': record.slug,
+            'transition_title': record.transition_title,
+            'user': record.user,
+            'order': record.order,
+            'previous': record.previous,
+            'next': record.next,
+            'group': record.group,
+            'is_initial': record.is_initial,
+            'is_final': record.is_final
+        }
+        return initial
+
+    def form_valid(self, form):
+        record = self.get_record()
+        record.name = form.cleaned_data['name']
+        record.slug = form.cleaned_data['slug']
+        record.transition_title = form.cleaned_data['transition_title']
+        record.order = form.cleaned_data['order']
+        record.previous = form.cleaned_data['previous']
+        record.next = form.cleaned_data['next']
+        record.group = form.cleaned_data['group']
+        record.is_initial = form.cleaned_data['is_initial']
+        record.is_final = form.cleaned_data['is_final']
+        record.save()
+        return redirect(reverse('wip:manage_status_list'))
+
+
+@login_required(login_url='/wip/accounts/login')
+def delete_user_status(request, status_id):
+    record = UserModelStatus.objects.get(id=status_id, user=request.user)
+    record.delete()
+    return redirect(reverse('wip:manage_status_list'))
