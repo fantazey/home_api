@@ -64,43 +64,12 @@ class Model(models.Model):
     """
     Модель над которой идет работа. Может состоять из одной или нескольких миниатюр. Считаем что модель это коробка
     """
-    class Status(models.TextChoices):
-        """
-        Статусы через которые проходит модель в процессе работы над ней
-        """
-        WISHED = 'wished', 'Лежит в магазине'
-        IN_INVENTORY = 'in_inventory', 'Лежит в шкафу'
-        ASSEMBLING = 'assembling', 'Собирается'
-        ASSEMBLED = 'assembled', 'Собрано'
-        PRIMING = 'priming', 'Грунтуется'
-        PRIMED = 'primed', 'Загрунтовано'
-        BATTLE_READY_PAINTING = 'battle_ready_painting', 'Крашу в базу'
-        BATTLE_READY_PAINTED = 'battle_ready_painted', 'Покрасил в базу'
-        PARADE_READY_PAINTING = 'parade_ready_painting', 'Хайлайтю'
-        PARADE_READY_PAINTED = 'parade_ready_painted', 'Добавлены хайхлайты'
-        BASE_DECORATING = 'base_decorating', 'Оформляю поставку'
-        BASE_DECORATED = 'base_decorated', 'База оформлена'
-        VARNISHING = 'varnishing', 'Задуваю лаком'
-        DONE = 'done', 'Закончено'
-
-        @staticmethod
-        def work_order():
-            return [
-                Model.Status.WISHED, Model.Status.IN_INVENTORY,
-                Model.Status.ASSEMBLING, Model.Status.ASSEMBLED,
-                Model.Status.PRIMING, Model.Status.PRIMED,
-                Model.Status.BATTLE_READY_PAINTING, Model.Status.BATTLE_READY_PAINTED,
-                Model.Status.PARADE_READY_PAINTING, Model.Status.PARADE_READY_PAINTED,
-                Model.Status.BASE_DECORATING, Model.Status.BASE_DECORATED,
-                Model.Status.VARNISHING, Model.Status.DONE,
-            ]
 
     name = models.CharField(verbose_name="Название модели", max_length=500)
     battlescribe_unit = models.ForeignKey(BSUnit, verbose_name="Из каталога BS", on_delete=models.RESTRICT, null=True,
                                           blank=True)
     kill_team = models.ForeignKey('KillTeam', verbose_name="KillTeam каталога BS", on_delete=models.RESTRICT,
                                   null=True, blank=True)
-    status = models.CharField(verbose_name="Статус", max_length=200, choices=Status.choices, default=Status.WISHED)
     user_status = models.ForeignKey('UserModelStatus', on_delete=models.RESTRICT, verbose_name="Статус",
                                     related_name="model_status", null=True)
     user = models.ForeignKey(User, verbose_name="Пользователь", on_delete=models.RESTRICT)
@@ -134,24 +103,6 @@ class Model(models.Model):
         progress.save()
         self.user_status = new_status
         self.save()
-
-    @staticmethod
-    def stages() -> list[tuple[Status, str]]:
-        return [
-            (Model.Status.IN_INVENTORY, "Куплено"),
-            (Model.Status.ASSEMBLING, "Начал сборку"),
-            (Model.Status.ASSEMBLED, "Закончил сборку"),
-            (Model.Status.PRIMING, "Начал грунтовать"),
-            (Model.Status.PRIMED, "Загрунтовано"),
-            (Model.Status.BATTLE_READY_PAINTING, "Начал красить в базу"),
-            (Model.Status.BATTLE_READY_PAINTED, "Покрасил в базу"),
-            (Model.Status.PARADE_READY_PAINTING, "Начал добавлять хайлайты"),
-            (Model.Status.PARADE_READY_PAINTED, "Законил хайлайты"),
-            (Model.Status.BASE_DECORATING, "Начал оформлять подставки"),
-            (Model.Status.BASE_DECORATED, "Подставки оформлены"),
-            (Model.Status.VARNISHING, "Начал задувать лаком"),
-            (Model.Status.DONE, "Готово"),
-        ]
 
     def change_status(self, status: str):
         user_status = UserModelStatus.objects.get(user=self.user, slug=status)
@@ -200,7 +151,6 @@ class ModelProgress(models.Model):
     datetime = models.DateTimeField(verbose_name="Дата записи")
     time = models.FloatField(verbose_name="Затраченое время в часах", default=0.0)
     model = models.ForeignKey(Model, on_delete=models.RESTRICT, verbose_name="Прогресс", related_name="progress")
-    status = models.CharField(verbose_name="Статус", max_length=200, choices=Model.Status.choices, null=True)
     user_status = models.ForeignKey('UserModelStatus', on_delete=models.RESTRICT, verbose_name="Статус",
                                     related_name="progress_status", null=True)
 

@@ -8,10 +8,10 @@ def add_statuses(apps, schema_editor):
     UserModelStatus = apps.get_model("work_in_progress", "UserModelStatus")
     User = apps.get_model("auth", "User")
 
-    ordered_statuses = [k.value for k in _Model.Status.work_order()]
+    ordered_statuses = []
 
-    stages_by_status = {k.value: v for k, v in _Model.stages()}
-    status_name_by_status = {k: v for k, v in zip(_Model.Status.values, _Model.Status.labels)}
+    stages_by_status = {k.value: v for k, v in []}
+    status_name_by_status = {k: v for k, v in zip([], [])}
     users = User.objects.all()
     count = len(ordered_statuses)
     status_model_by_status = {}

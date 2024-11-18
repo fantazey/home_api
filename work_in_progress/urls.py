@@ -1,11 +1,22 @@
 from django.contrib.auth.decorators import login_required
-from django.urls import path, reverse_lazy
+from django.urls import path, reverse_lazy, include
+
+from rest_framework import routers
+
 from . import views
 
 LOGIN_URL = reverse_lazy('wip:login')
 
+router = routers.DefaultRouter()
+router.register(r"models", views.ApiWipModelsViewSet)
+router.register(r"statuses", views.ApiWipUserModelStatusesViewSet)
+
 app_name = 'wip'
 urlpatterns = [
+    # api
+    path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
+    path('api/', include(router.urls)),
+
     # common paths
     path('accounts/login/', views.WipLoginView.as_view(), name='login'),
     path('accounts/logout', views.log_out, name='logout'),

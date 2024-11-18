@@ -12,11 +12,14 @@ from django.utils import timezone
 from django.views.generic import ListView, View
 from django.views.generic.edit import FormView
 
+from rest_framework import viewsets, permissions, generics, authentication
+
 from .forms import AddModelForm, LoginForm, AddProgressForm, RegistrationForm, EditModelForm, \
     ModelFilterForm, WorkMapFilterForm, PaintInventoryManageForm, InventoryFilterForm, StatusGroupForm, \
     UserStatusForm, ModelGroupForm
 from .models import Model, ModelProgress, ModelImage, Artist, PaintInventory, Paint, PaintVendor, UserModelStatus, \
     StatusGroup, ModelGroup
+from .serializers import ModelSerializer, UserModelStatusSerializer
 
 
 class WipLoginView(LoginView):
@@ -285,7 +288,7 @@ class WipModelUpdate(FormView):
         model.buy_date = form.cleaned_data['buy_date']
         if model.user_status != form.cleaned_data['status']:
             progress = ModelProgress(model=model,
-                                     title="Смена статуса на: %s" % Model.Status(form.cleaned_data['status']).label,
+                                     title="Смена статуса на: %s" % model.user_status.transition_title,
                                      time=0,
                                      user_status=model.user_status,
                                      datetime=datetime.datetime.now())
@@ -752,3 +755,30 @@ def delete_user_model_group(request, model_group_id):
     record = ModelGroup.objects.get(id=model_group_id, user=request.user)
     record.delete()
     return redirect(reverse('wip:manage_model_group_list'))
+
+
+class ApiWipBasicAuthViewSet(viewsets.ModelViewSet):
+    authentication_classes = [authentication.BasicAuthentication]
+
+
+class ApiWipModelsViewSet(ApiWipBasicAuthViewSet):
+    queryset = Model.objects.all()
+    serializer_class = ModelSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self, *args, **kwargs):
+        old_date = timezone.now() - datetime.timedelta(days=2000)
+        return super().get_queryset(*args, **kwargs).annotate(last_record=Max('progress__datetime', default=old_date))\
+            .filter(user=self.request.user)\
+            .order_by('-last_record', 'buy_date', 'created')
+
+
+class ApiWipUserModelStatusesViewSet(ApiWipBasicAuthViewSet):
+    queryset = UserModelStatus.objects.all()
+    serializer_class = UserModelStatusSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self, *args, **kwargs):
+        return super().get_queryset(*args, **kwargs)\
+            .filter(user=self.request.user)\
+            .order_by('order')
