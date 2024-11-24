@@ -12,7 +12,8 @@ from django.utils import timezone
 from django.views.generic import ListView, View
 from django.views.generic.edit import FormView
 
-from rest_framework import viewsets, permissions, generics, authentication
+from rest_framework import viewsets, permissions, authentication
+from knox.views import LoginView as KnoxLoginView
 
 from .forms import AddModelForm, LoginForm, AddProgressForm, RegistrationForm, EditModelForm, \
     ModelFilterForm, WorkMapFilterForm, PaintInventoryManageForm, InventoryFilterForm, StatusGroupForm, \
@@ -757,11 +758,11 @@ def delete_user_model_group(request, model_group_id):
     return redirect(reverse('wip:manage_model_group_list'))
 
 
-class ApiWipBasicAuthViewSet(viewsets.ModelViewSet):
+class ApiWipLoginView(KnoxLoginView):
     authentication_classes = [authentication.BasicAuthentication]
 
 
-class ApiWipModelsViewSet(ApiWipBasicAuthViewSet):
+class ApiWipModelsViewSet(viewsets.ModelViewSet):
     queryset = Model.objects.all()
     serializer_class = ModelSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -773,7 +774,7 @@ class ApiWipModelsViewSet(ApiWipBasicAuthViewSet):
             .order_by('-last_record', 'buy_date', 'created')
 
 
-class ApiWipUserModelStatusesViewSet(ApiWipBasicAuthViewSet):
+class ApiWipUserModelStatusesViewSet(viewsets.ModelViewSet):
     queryset = UserModelStatus.objects.all()
     serializer_class = UserModelStatusSerializer
     permission_classes = [permissions.IsAuthenticated]

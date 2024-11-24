@@ -2,6 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.urls import path, reverse_lazy, include
 
 from rest_framework import routers
+from knox import views as knox_views
 
 from . import views
 
@@ -14,7 +15,9 @@ router.register(r"statuses", views.ApiWipUserModelStatusesViewSet)
 app_name = 'wip'
 urlpatterns = [
     # api
-    path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
+    path('api/auth/login/', views.ApiWipLoginView.as_view(), name='knox_login'),
+    path('api/auth/logout/', knox_views.LogoutView.as_view(), name='knox_logout'),
+    path('api/auth/logoutall/', knox_views.LogoutAllView.as_view(), name='knox_logoutall'),
     path('api/', include(router.urls)),
 
     # common paths
