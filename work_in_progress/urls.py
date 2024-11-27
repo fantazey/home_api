@@ -11,6 +11,10 @@ LOGIN_URL = reverse_lazy('wip:login')
 router = routers.DefaultRouter()
 router.register(r"models", views.ApiWipModelsViewSet)
 router.register(r"statuses", views.ApiWipUserModelStatusesViewSet)
+router.register(r"model-groups", views.ApiWipModelGroupViewSet)
+router.register(r"bs-categories", views.ApiWipBattleScribeCategoryViewSet)
+router.register(r"bs-units", views.ApiWipBattleScribeUnitsViewSet)
+router.register(r"kill-teams", views.ApiWipKillTeamViewSet)
 
 app_name = 'wip'
 urlpatterns = [

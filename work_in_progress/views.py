@@ -12,15 +12,16 @@ from django.utils import timezone
 from django.views.generic import ListView, View
 from django.views.generic.edit import FormView
 
-from rest_framework import viewsets, permissions, authentication
+from rest_framework import viewsets, permissions, authentication, pagination
 from knox.views import LoginView as KnoxLoginView
 
 from .forms import AddModelForm, LoginForm, AddProgressForm, RegistrationForm, EditModelForm, \
     ModelFilterForm, WorkMapFilterForm, PaintInventoryManageForm, InventoryFilterForm, StatusGroupForm, \
     UserStatusForm, ModelGroupForm
 from .models import Model, ModelProgress, ModelImage, Artist, PaintInventory, Paint, PaintVendor, UserModelStatus, \
-    StatusGroup, ModelGroup
-from .serializers import ModelSerializer, UserModelStatusSerializer
+    StatusGroup, ModelGroup, BSCategory, BSUnit, KillTeam
+from .serializers import ModelSerializer, UserModelStatusSerializer, BSCategorySerializer, BSUnitSerializer, \
+    KillTeamSerializer, UserModelGroupSerializer, UserModelStatusIdSerializer
 
 
 class WipLoginView(LoginView):
@@ -758,6 +759,12 @@ def delete_user_model_group(request, model_group_id):
     return redirect(reverse('wip:manage_model_group_list'))
 
 
+class ApiWipPagination(pagination.PageNumberPagination):
+    page_size = 5
+    page_query_param = "page"
+    page_size_query_param = "page_size"
+
+
 class ApiWipLoginView(KnoxLoginView):
     authentication_classes = [authentication.BasicAuthentication]
 
@@ -765,6 +772,7 @@ class ApiWipLoginView(KnoxLoginView):
 class ApiWipModelsViewSet(viewsets.ModelViewSet):
     queryset = Model.objects.all()
     serializer_class = ModelSerializer
+    pagination_class = ApiWipPagination
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self, *args, **kwargs):
@@ -783,3 +791,30 @@ class ApiWipUserModelStatusesViewSet(viewsets.ModelViewSet):
         return super().get_queryset(*args, **kwargs)\
             .filter(user=self.request.user)\
             .order_by('order')
+
+
+class ApiWipBattleScribeUnitsViewSet(viewsets.ModelViewSet):
+    queryset = BSUnit.objects.all()
+    serializer_class = BSUnit
+    permission_classes = [permissions.IsAuthenticated]
+
+
+class ApiWipBattleScribeCategoryViewSet(viewsets.ModelViewSet):
+    queryset = BSCategory.objects.all()
+    serializer_class = UserModelStatusSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+
+class ApiWipKillTeamViewSet(viewsets.ModelViewSet):
+    queryset = KillTeam.objects.all()
+    serializer_class = KillTeamSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+
+class ApiWipModelGroupViewSet(viewsets.ModelViewSet):
+    queryset = ModelGroup.objects.all()
+    serializer_class = UserModelGroupSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self, *args, **kwargs):
+        return super().get_queryset(*args, **kwargs).filter(user=self.request.user)
