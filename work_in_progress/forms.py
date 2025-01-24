@@ -62,6 +62,9 @@ class AddModelForm(forms.Form):
                                          required=False)
     count = forms.IntegerField(label="Количество миниатюр", required=False, initial=1)
     group = forms.ModelChoiceField(label="Группа", required=False, queryset=None)
+    images = forms.ImageField(label="Картиночки",
+                              widget=forms.ClearableFileInput(attrs={'multiple': True}),
+                              required=False)
 
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)

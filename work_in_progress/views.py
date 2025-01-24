@@ -237,6 +237,7 @@ class WipModelCreate(FormView):
             progress_title = form.cleaned_data['status'].transition_title
 
         model.save()
+        model.add_images(self.request.FILES.getlist('images'))
         progress = ModelProgress(datetime=datetime.datetime.now(), title=progress_title, model=model,
                                  user_status=model.user_status)
         progress.save()
