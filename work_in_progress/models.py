@@ -141,6 +141,11 @@ class Model(models.Model):
             "height": 100 / ratio
         }
 
+    def add_images(self, images):
+        for image_file in images:
+            image = ModelImage(model=self, image=image_file)
+            image.save()
+
 
 class ModelProgress(models.Model):
     """

@@ -2,11 +2,18 @@
 {% block back_link %}
 <a href="{% url 'wip:progress' user.username model.id %}">Назад</a>
 {% endblock back_link %}
-{% block form_fields %}
-{% include 'wip/widgets/form-field.html' with field=form.title %}
-{% include 'wip/widgets/form-field.html' with field=form.description %}
-{% include 'wip/widgets/form-field.html' with field=form.date %}
-{% include 'wip/widgets/form-field.html' with field=form.time %}
-{% include 'wip/widgets/form-field.html' with field=form.status %}
-{% include 'wip/widgets/form-field.html' with field=form.images %}
-{% endblock form_fields %}
+{% block form %}
+    <form action="{{ submit_url }}" class="ui form" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {% include 'wip/widgets/form-field.html' with field=form.title %}
+        {% include 'wip/widgets/form-field.html' with field=form.description %}
+        {% include 'wip/widgets/form-field.html' with field=form.date %}
+        {% include 'wip/widgets/form-field.html' with field=form.time %}
+        {% include 'wip/widgets/form-field.html' with field=form.status %}
+        {% include 'wip/widgets/form-field.html' with field=form.images %}
+
+        <div class="field">
+            <button class="ui button" type="submit">{{ submit_label }}</button>
+        </div>
+    </form>
+{% endblock form %}

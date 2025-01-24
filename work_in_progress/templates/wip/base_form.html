@@ -8,6 +8,7 @@
 <div class="ui five column doubling stackable grid container">
     <div class="column"></div>
     <div class="column">
+    {% block form %}
         <form action="{{ submit_url }}" class="ui form" method="post">
             {% csrf_token %}
             {% block form_fields %}
@@ -16,6 +17,7 @@
                 <button class="ui button" type="submit">{{ submit_label }}</button>
             </div>
         </form>
+    {% endblock form %}
     </div>
     <div class="column"></div>
     <div class="column"></div>

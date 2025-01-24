@@ -299,6 +299,7 @@ class WipModelUpdate(FormView):
         model.hidden = form.cleaned_data['hidden']
         model.unit_count = form.cleaned_data['count']
         model.save()
+        model.add_images(self.request.FILES.getlist('images'))
         return redirect(reverse('wip:models', kwargs={'username': self.request.user.username}))
 
 

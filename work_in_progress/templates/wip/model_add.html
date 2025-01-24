@@ -1,15 +1,22 @@
 {% extends 'wip/model_form.html' %}
-{% block form_fields %}
-    {% include 'wip/widgets/form-field.html' with field=form.bs_category %}
-    {% include 'wip/widgets/form-field.html' with field=form.bs_unit %}
-    {% include 'wip/widgets/form-field.html' with field=form.bs_kill_team %}
-    {% include 'wip/widgets/form-field.html' with field=form.name %}
-    {% include 'wip/widgets/form-field.html' with field=form.count %}
-    {% include 'wip/widgets/form-field.html' with field=form.status %}
-    {% include 'wip/widgets/form-field.html' with field=form.groups %}
-    <div id="buy-date-field" class="field hidden">
-        <label>{{ form.buy_date.label }}</label>
-        {{ form.buy_date }}
-    </div>
-    {% include 'wip/widgets/form-field.html' with field=form.hidden %}
-{% endblock form_fields %}
+{% block form %}
+    <form action="{{ submit_url }}" class="ui form" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {% include 'wip/widgets/form-field.html' with field=form.bs_category %}
+        {% include 'wip/widgets/form-field.html' with field=form.bs_unit %}
+        {% include 'wip/widgets/form-field.html' with field=form.bs_kill_team %}
+        {% include 'wip/widgets/form-field.html' with field=form.name %}
+        {% include 'wip/widgets/form-field.html' with field=form.count %}
+        {% include 'wip/widgets/form-field.html' with field=form.status %}
+        {% include 'wip/widgets/form-field.html' with field=form.groups %}
+        <div id="buy-date-field" class="field hidden">
+            <label>{{ form.buy_date.label }}</label>
+            {{ form.buy_date }}
+        </div>
+        {% include 'wip/widgets/form-field.html' with field=form.hidden %}
+        {% include 'wip/widgets/form-field.html' with field=form.images %}
+        <div class="field">
+                <button class="ui button" type="submit">{{ submit_label }}</button>
+        </div>
+    </form>
+{% endblock form %}
