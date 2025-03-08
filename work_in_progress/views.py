@@ -13,6 +13,7 @@ from django.views.generic import ListView, View
 from django.views.generic.edit import FormView
 
 from rest_framework import viewsets, permissions, authentication, pagination
+from rest_framework.response import Response
 from knox.views import LoginView as KnoxLoginView
 
 from .forms import AddModelForm, LoginForm, AddProgressForm, RegistrationForm, EditModelForm, \
@@ -765,6 +766,15 @@ class ApiWipPagination(pagination.PageNumberPagination):
     page_size = 5
     page_query_param = "page"
     page_size_query_param = "page_size"
+
+    def get_paginated_response(self, data):
+        return Response({
+            'count': self.page.paginator.count,
+            'page': self.page.number,
+            'pages': self.page.paginator.num_pages,
+            'page_size': self.page_size,
+            'results': data,
+        })
 
 
 class ApiWipLoginView(KnoxLoginView):
