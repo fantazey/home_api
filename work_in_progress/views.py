@@ -779,9 +779,19 @@ class ApiWipModelsViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self, *args, **kwargs):
         old_date = timezone.now() - datetime.timedelta(days=2000)
-        return super().get_queryset(*args, **kwargs).annotate(last_record=Max('progress__datetime', default=old_date))\
+        models = super().get_queryset().annotate(last_record=Max('progress__datetime', default=old_date))\
             .filter(user=self.request.user)\
             .order_by('-last_record', 'buy_date', 'created')
+        groups = self.request.query_params.getlist("groups")
+        statuses = self.request.query_params.getlist('user_status')
+        name = self.request.query_params.get('name')
+        if len(groups) > 0:
+            models = models.filter(groups__in=groups)
+        if len(statuses) > 0:
+            models = models.filter(user_status__in=statuses)
+        if len(name) > 0:
+            models = models.filter(name__contains=name)
+        return models
 
 
 class ApiWipUserModelStatusesViewSet(viewsets.ModelViewSet):
@@ -790,7 +800,7 @@ class ApiWipUserModelStatusesViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self, *args, **kwargs):
-        return super().get_queryset(*args, **kwargs)\
+        return super().get_queryset()\
             .filter(user=self.request.user)\
             .order_by('order')
 
@@ -819,4 +829,4 @@ class ApiWipModelGroupViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self, *args, **kwargs):
-        return super().get_queryset(*args, **kwargs).filter(user=self.request.user)
+        return super().get_queryset().filter(user=self.request.user)
