@@ -14,6 +14,7 @@ from django.views.generic.edit import FormView
 
 from rest_framework import viewsets, permissions, authentication, pagination
 from rest_framework.response import Response
+from rest_framework.decorators import action
 from knox.views import LoginView as KnoxLoginView
 
 from .forms import AddModelForm, LoginForm, AddProgressForm, RegistrationForm, EditModelForm, \
@@ -22,7 +23,8 @@ from .forms import AddModelForm, LoginForm, AddProgressForm, RegistrationForm, E
 from .models import Model, ModelProgress, ModelImage, Artist, PaintInventory, Paint, PaintVendor, UserModelStatus, \
     StatusGroup, ModelGroup, BSCategory, BSUnit, KillTeam
 from .serializers import ModelSerializer, UserModelStatusSerializer, BSCategorySerializer, BSUnitSerializer, \
-    KillTeamSerializer, UserModelGroupSerializer, UserModelStatusIdSerializer
+    KillTeamSerializer, UserModelGroupSerializer, UserModelStatusIdSerializer, ModelProgressSerializer, \
+    ModelImageSerializer
 
 
 class WipLoginView(LoginView):
@@ -795,13 +797,33 @@ class ApiWipModelsViewSet(viewsets.ModelViewSet):
         groups = self.request.query_params.getlist("groups")
         statuses = self.request.query_params.getlist('user_status')
         name = self.request.query_params.get('name')
-        if len(groups) > 0:
+        if groups is not None and len(groups) > 0:
             models = models.filter(groups__in=groups)
-        if len(statuses) > 0:
+        if statuses is not None and len(statuses) > 0:
             models = models.filter(user_status__in=statuses)
-        if len(name) > 0:
+        if name is not None and len(name) > 0:
             models = models.filter(name__contains=name)
         return models
+
+    @action(methods=['get'], detail=True, permission_classes=[permissions.IsAuthenticated],
+            url_path='progress', url_name='model_progress')
+    def get_model_progress(self, request, pk=None):
+        if pk is None:
+            return None
+        model = Model.objects.get(id=int(pk))
+        items = ModelProgress.objects.filter(model=model).order_by('-datetime')
+        serialized = ModelProgressSerializer(items, many=True)
+        return Response(serialized.data)
+
+    @action(methods=['get'], detail=True, permission_classes=[permissions.IsAuthenticated],
+            url_path='images', url_name='model_images')
+    def get_model_images(self, request, pk=None):
+        if pk is None:
+            return None
+        model = Model.objects.get(id=int(pk))
+        items = ModelImage.objects.filter(model=model).order_by('-created')
+        serialized = ModelImageSerializer(items, many=True)
+        return Response(serialized.data)
 
 
 class ApiWipUserModelStatusesViewSet(viewsets.ModelViewSet):

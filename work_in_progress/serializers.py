@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Model, UserModelStatus, ModelGroup, KillTeam, BSUnit, BSCategory
+from .models import Model, UserModelStatus, ModelGroup, KillTeam, BSUnit, BSCategory, ModelProgress, ModelImage
 
 
 class UserModelGroupSerializer(serializers.ModelSerializer):
@@ -34,6 +34,7 @@ class UserModelStatusSerializer(serializers.ModelSerializer):
         model = UserModelStatus
         fields = ['id', 'name', 'order']
 
+
 #######
 
 
@@ -55,9 +56,11 @@ class ModelSerializer(serializers.HyperlinkedModelSerializer):
     user_status_id = UserModelStatusIdSerializer(read_only=False, source='user_status', slug_field='id')
     user_status_name = serializers.SlugRelatedField(read_only=True, source='user_status', slug_field='name')
     groups = UserModelGroupSerializer(read_only=False, many=True)
-    battlescribe_unit_id = serializers.SlugRelatedField(read_only=False, source='battlescribe_unit', slug_field='id', queryset=BSUnit.objects.all())
+    battlescribe_unit_id = serializers.SlugRelatedField(read_only=False, source='battlescribe_unit', slug_field='id',
+                                                        queryset=BSUnit.objects.all())
     battlescribe_unit_name = serializers.SlugRelatedField(read_only=True, source='battlescribe_unit', slug_field='name')
-    kill_team_id = serializers.SlugRelatedField(read_only=False, source='kill_team', slug_field='id', queryset=KillTeam.objects.all())
+    kill_team_id = serializers.SlugRelatedField(read_only=False, source='kill_team', slug_field='id',
+                                                queryset=KillTeam.objects.all())
     kill_team_name = serializers.SlugRelatedField(read_only=True, source='kill_team', slug_field='name')
     hours_spent = serializers.FloatField(read_only=True, source='get_hours_spent')
 
@@ -80,3 +83,30 @@ class ModelSerializer(serializers.HyperlinkedModelSerializer):
         ]
 
 
+class ModelProgressSerializer(serializers.HyperlinkedModelSerializer):
+    user_status_id = UserModelStatusIdSerializer(read_only=False, source='user_status', slug_field='id')
+    user_status_name = serializers.SlugRelatedField(read_only=True, source='user_status', slug_field='name')
+
+    class Meta:
+        model = ModelProgress
+        fields = [
+            'id',
+            'title',
+            'description',
+            'datetime',
+            'time',
+            'get_last_image_url',
+            'user_status_id',
+            'user_status_name',
+        ]
+
+
+class ModelImageSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = ModelImage
+        fields = [
+            'id',
+            'image',
+            'is_image_for_progress',
+            'created'
+        ]

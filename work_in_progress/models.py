@@ -175,6 +175,21 @@ class ModelProgress(models.Model):
             image = ModelImage(progress=self, model=self.model, image=image_file)
             image.save()
 
+    @property
+    def get_last_image(self):
+        if not self.modelimage_set.exists():
+            return None
+        image = self.modelimage_set.order_by("-id").first().image
+        if DEBUG and not path.exists(image.path):
+            return None
+        return image
+
+    @property
+    def get_last_image_url(self):
+        if self.get_last_image:
+            return self.get_last_image.url
+        return None
+
 
 def model_image_path(instance: 'ModelImage', filename: str):
     return "wip/%s/%s/%s" % (instance.model.user.username, instance.model.name, filename)
@@ -192,6 +207,10 @@ class ModelImage(models.Model):
     class Meta:
         verbose_name = "Изображение модели"
         verbose_name_plural = "Изображения модели"
+
+    @property
+    def is_image_for_progress(self):
+        return self.progress is not None
 
 
 class Artist(models.Model):
