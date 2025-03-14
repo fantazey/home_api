@@ -12,7 +12,7 @@ from django.utils import timezone
 from django.views.generic import ListView, View
 from django.views.generic.edit import FormView
 
-from rest_framework import viewsets, permissions, authentication, pagination
+from rest_framework import viewsets, permissions, authentication, pagination, parsers
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from knox.views import LoginView as KnoxLoginView
@@ -768,6 +768,7 @@ class ApiWipPagination(pagination.PageNumberPagination):
     page_size = 5
     page_query_param = "page"
     page_size_query_param = "page_size"
+    http_method_names = ['get', 'head']
 
     def get_paginated_response(self, data):
         return Response({
@@ -781,13 +782,16 @@ class ApiWipPagination(pagination.PageNumberPagination):
 
 class ApiWipLoginView(KnoxLoginView):
     authentication_classes = [authentication.BasicAuthentication]
+    http_method_names = ['post', 'head']
 
 
 class ApiWipModelsViewSet(viewsets.ModelViewSet):
     queryset = Model.objects.all()
     serializer_class = ModelSerializer
     pagination_class = ApiWipPagination
+    parser_classes = (parsers.MultiPartParser, )
     permission_classes = [permissions.IsAuthenticated]
+    http_method_names = ['get', 'head', 'post', 'put']
 
     def get_queryset(self, *args, **kwargs):
         old_date = timezone.now() - datetime.timedelta(days=2000)
@@ -815,6 +819,11 @@ class ApiWipModelsViewSet(viewsets.ModelViewSet):
         serialized = ModelProgressSerializer(items, many=True)
         return Response(serialized.data)
 
+    @action(methods=['post'], detail=True, permission_classes=[permissions.IsAuthenticated],
+            url_path='progress', url_name='model_progress')
+    def post_model_progress(self, request, pk=None):
+        pass
+
     @action(methods=['get'], detail=True, permission_classes=[permissions.IsAuthenticated],
             url_path='images', url_name='model_images')
     def get_model_images(self, request, pk=None):
@@ -825,11 +834,22 @@ class ApiWipModelsViewSet(viewsets.ModelViewSet):
         serialized = ModelImageSerializer(items, many=True)
         return Response(serialized.data)
 
+    @action(methods=['post'], detail=True, permission_classes=[permissions.IsAuthenticated],
+            url_path='images', url_name='model_image')
+    def post_model_image(self, request, pk=None):
+        if pk is None:
+            return None
+        model = Model.objects.get(id=int(pk))
+        data = request.data
+        file = request.FILES
+        pass
+
 
 class ApiWipUserModelStatusesViewSet(viewsets.ModelViewSet):
     queryset = UserModelStatus.objects.all()
     serializer_class = UserModelStatusSerializer
     permission_classes = [permissions.IsAuthenticated]
+    http_method_names = ['get', 'head']
 
     def get_queryset(self, *args, **kwargs):
         return super().get_queryset()\
@@ -839,26 +859,30 @@ class ApiWipUserModelStatusesViewSet(viewsets.ModelViewSet):
 
 class ApiWipBattleScribeUnitsViewSet(viewsets.ModelViewSet):
     queryset = BSUnit.objects.all()
-    serializer_class = BSUnit
+    serializer_class = BSUnitSerializer
     permission_classes = [permissions.IsAuthenticated]
+    http_method_names = ['get', 'head']
 
 
 class ApiWipBattleScribeCategoryViewSet(viewsets.ModelViewSet):
     queryset = BSCategory.objects.all()
     serializer_class = UserModelStatusSerializer
     permission_classes = [permissions.IsAuthenticated]
+    http_method_names = ['get', 'head']
 
 
 class ApiWipKillTeamViewSet(viewsets.ModelViewSet):
     queryset = KillTeam.objects.all()
     serializer_class = KillTeamSerializer
     permission_classes = [permissions.IsAuthenticated]
+    http_method_names = ['get', 'head']
 
 
 class ApiWipModelGroupViewSet(viewsets.ModelViewSet):
     queryset = ModelGroup.objects.all()
     serializer_class = UserModelGroupSerializer
     permission_classes = [permissions.IsAuthenticated]
+    http_method_names = ['get', 'head']
 
     def get_queryset(self, *args, **kwargs):
         return super().get_queryset().filter(user=self.request.user)

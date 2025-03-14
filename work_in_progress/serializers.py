@@ -1,38 +1,48 @@
 from rest_framework import serializers
+from datetime import date
 
 from .models import Model, UserModelStatus, ModelGroup, KillTeam, BSUnit, BSCategory, ModelProgress, ModelImage
 
 
 class UserModelGroupSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField()
+
     class Meta:
         model = ModelGroup
         fields = ['id', 'name']
 
 
+class BSCategorySerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField()
+
+    class Meta:
+        model = BSCategory
+        fields = ['id', 'name']
+
+
 class BSUnitSerializer(serializers.ModelSerializer):
-    bs_category = serializers.PrimaryKeyRelatedField(read_only=True)
+    id = serializers.IntegerField()
+    bs_category = BSCategorySerializer()
 
     class Meta:
         model = BSUnit
         fields = ['id', 'name', 'bs_category']
 
 
-class BSCategorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = BSCategory
-        fields = ['id', 'name']
-
-
 class KillTeamSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField()
+
     class Meta:
         model = KillTeam
         fields = ['id', 'name']
 
 
 class UserModelStatusSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField()
+
     class Meta:
         model = UserModelStatus
-        fields = ['id', 'name', 'order']
+        fields = ['id', 'name', 'order', 'previous', 'next']
 
 
 #######
@@ -53,39 +63,102 @@ class UserModelStatusIdSerializer(serializers.SlugRelatedField):
 
 
 class ModelSerializer(serializers.HyperlinkedModelSerializer):
-    user_status_id = UserModelStatusIdSerializer(read_only=False, source='user_status', slug_field='id')
-    user_status_name = serializers.SlugRelatedField(read_only=True, source='user_status', slug_field='name')
-    groups = UserModelGroupSerializer(read_only=False, many=True)
-    battlescribe_unit_id = serializers.SlugRelatedField(read_only=False, source='battlescribe_unit', slug_field='id',
-                                                        queryset=BSUnit.objects.all())
-    battlescribe_unit_name = serializers.SlugRelatedField(read_only=True, source='battlescribe_unit', slug_field='name')
-    kill_team_id = serializers.SlugRelatedField(read_only=False, source='kill_team', slug_field='id',
-                                                queryset=KillTeam.objects.all())
-    kill_team_name = serializers.SlugRelatedField(read_only=True, source='kill_team', slug_field='name')
+    user_status = UserModelStatusSerializer()
+    groups = UserModelGroupSerializer(many=True)
+    battlescribe_unit = BSUnitSerializer(required=False, allow_null=True)
+    kill_team = KillTeamSerializer(required=False, allow_null=True)
     hours_spent = serializers.FloatField(read_only=True, source='get_hours_spent')
+    get_last_image_url = serializers.CharField(read_only=True)
 
     class Meta:
         model = Model
         fields = [
             'id',
             'name',
+            'buy_date',
             'unit_count',
             'terrain',
             'get_last_image_url',
-            'user_status_id',
-            'user_status_name',
+            'user_status',
             'groups',
-            'battlescribe_unit_id',
-            'battlescribe_unit_name',
-            'kill_team_id',
-            'kill_team_name',
+            'battlescribe_unit',
+            'kill_team',
             'hours_spent',
         ]
 
+    def create(self, validated_data):
+        request = self.context['request']
+        user = request.user
+        bs_unit_data = validated_data.pop('bs_unit')
+        kill_team_data = validated_data.pop('kill_team')
+        groups_data = validated_data.pop('groups')
+        status_data = validated_data.pop('user_status')
+        model = Model(**validated_data)
+        model.user_status = UserModelStatus.objects.get(id=status_data.get('id'), user=user)
+
+        if groups_data is not None:
+            model_group_id = []
+            for model_group_data_item in groups_data:
+                model_group_id.append(model_group_data_item.get('id'))
+            groups = ModelGroup.objects.filter(user=user, id__in=model_group_id)
+            for group in groups:
+                model.groups.add(group)
+
+        if bs_unit_data is not None:
+            model.battlescribe_unit = BSUnit.objects.get(id=bs_unit_data.get('id'))
+        else:
+            model.battlescribe_unit = None
+
+        if kill_team_data is not None:
+            model.kill_team = KillTeam.objects.get(id=kill_team_data.get('id'))
+        else:
+            model.kill_team = None
+
+        model.save()
+        return model
+
+    def update(self, instance: Model, validated_data):
+        request = self.context['request']
+        user = request.user
+
+        instance.name = validated_data.get('name', instance.name)
+        instance.unit_count = validated_data.get('unit_count', instance.unit_count)
+        instance.terrain = validated_data.get('terrain', instance.terrain)
+        instance.buy_date = validated_data.get('buy_date', instance.buy_date)
+
+        user_status_data: dict = validated_data.pop('user_status')
+        if user_status_data is not None:
+            instance.user_status = UserModelStatus.objects.get(id=user_status_data.get('id'), user=user)
+
+        model_group_data: list = validated_data.pop('groups')
+        if model_group_data is not None:
+            model_group_id = []
+            for model_group_data_item in model_group_data:
+                model_group_id.append(model_group_data_item.get('id'))
+            groups = ModelGroup.objects.filter(user=user, id__in=model_group_id)
+            instance.groups.clear()
+            for group in groups:
+                instance.groups.add(group)
+
+        bs_unit_data = validated_data.pop("battlescribe_unit")
+        if bs_unit_data is not None:
+            instance.battlescribe_unit = BSUnit.objects.get(id=bs_unit_data.get('id'))
+        else:
+            instance.battlescribe_unit = None
+
+        kill_team_data = validated_data.pop("kill_team")
+        if kill_team_data is not None:
+            instance.kill_team = KillTeam.objects.get(id=kill_team_data.get('id'))
+        else:
+            instance.kill_team = None
+
+        instance.save()
+        return instance
+
 
 class ModelProgressSerializer(serializers.HyperlinkedModelSerializer):
-    user_status_id = UserModelStatusIdSerializer(read_only=False, source='user_status', slug_field='id')
-    user_status_name = serializers.SlugRelatedField(read_only=True, source='user_status', slug_field='name')
+    user_status = UserModelStatusSerializer()
+    get_last_image_url = serializers.CharField(read_only=True)
 
     class Meta:
         model = ModelProgress
@@ -96,8 +169,7 @@ class ModelProgressSerializer(serializers.HyperlinkedModelSerializer):
             'datetime',
             'time',
             'get_last_image_url',
-            'user_status_id',
-            'user_status_name',
+            'user_status'
         ]
 
 
