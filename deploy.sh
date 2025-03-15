@@ -91,7 +91,7 @@ docker run -d --name=home-api-telebot \
   --restart=unless-stopped \
   -v /home/pi/Projects/home-api/home_api/private_settings.py:/usr/src/app/home_api/private_settings.py:ro \
   -v StaticFiles:/usr/src/app/static \
-  -v /tmp/homeapi:/tmp/homeapi \
+  -v /home/pi/Projects/home-api/work_in_progress/server:/tmp/ \
   -v /home/pi/Projects/home-api/media:/usr/src/app/media \
   --add-host=pi:192.168.0.133 \
   home-api-telebot:arm-v7

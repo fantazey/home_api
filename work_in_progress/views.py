@@ -12,7 +12,7 @@ from django.utils import timezone
 from django.views.generic import ListView, View
 from django.views.generic.edit import FormView
 
-from rest_framework import viewsets, permissions, authentication, pagination, parsers
+from rest_framework import viewsets, permissions, authentication, pagination, parsers, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from knox.views import LoginView as KnoxLoginView
@@ -809,40 +809,68 @@ class ApiWipModelsViewSet(viewsets.ModelViewSet):
             models = models.filter(name__contains=name)
         return models
 
-    @action(methods=['get'], detail=True, permission_classes=[permissions.IsAuthenticated],
+    @action(methods=['get', 'post'], detail=True, permission_classes=[permissions.IsAuthenticated],
             url_path='progress', url_name='model_progress')
-    def get_model_progress(self, request, pk=None):
+    def model_progress(self, request, pk=None):
         if pk is None:
             return None
+        if request.method == 'POST':
+            return self.post_model_progress(request, pk)
+        if request.method == 'GET':
+            return self.get_model_progress(request, pk)
+        return None
+
+    @staticmethod
+    def get_model_progress(request, pk=None):
         model = Model.objects.get(id=int(pk))
         items = ModelProgress.objects.filter(model=model).order_by('-datetime')
         serialized = ModelProgressSerializer(items, many=True)
         return Response(serialized.data)
 
-    @action(methods=['post'], detail=True, permission_classes=[permissions.IsAuthenticated],
-            url_path='progress', url_name='model_progress')
-    def post_model_progress(self, request, pk=None):
-        pass
+    @staticmethod
+    def post_model_progress(request, pk=None):
+        model = Model.objects.get(id=int(pk))
+        form_data = request.data
+        files = request.FILES.getlist('images')
+        form = AddProgressForm(form_data, user=request.user)
+        if form.is_valid():
+            progress = ModelProgress(model=model,
+                                     title=form.cleaned_data['title'],
+                                     description=form.cleaned_data['description'],
+                                     time=form.cleaned_data['time'],
+                                     user_status=form.cleaned_data['status'],
+                                     datetime=form.cleaned_data['date'])
+            progress.save()
+            progress.add_images(files)
+            serialized = ModelProgressSerializer(progress)
+            return Response(serialized.data)
+        errors = []
+        for k, v in form.errors.items():
+            errors.append({k: v})
+        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(methods=['get'], detail=True, permission_classes=[permissions.IsAuthenticated],
+    @action(methods=['get', 'post'], detail=True, permission_classes=[permissions.IsAuthenticated],
             url_path='images', url_name='model_images')
-    def get_model_images(self, request, pk=None):
+    def model_images(self, request, pk=None):
         if pk is None:
             return None
+        if 'POST' == request.method:
+            return self.post_model_images(request, pk)
+        if 'GET' == request.method:
+            return self.get_model_images(pk)
+
+    @staticmethod
+    def get_model_images(pk=None):
         model = Model.objects.get(id=int(pk))
         items = ModelImage.objects.filter(model=model).order_by('-created')
         serialized = ModelImageSerializer(items, many=True)
         return Response(serialized.data)
 
-    @action(methods=['post'], detail=True, permission_classes=[permissions.IsAuthenticated],
-            url_path='images', url_name='model_image')
-    def post_model_image(self, request, pk=None):
-        if pk is None:
-            return None
+    @staticmethod
+    def post_model_images(request, pk=None):
         model = Model.objects.get(id=int(pk))
-        data = request.data
-        file = request.FILES
-        pass
+        model.add_images(request.FILES.getlist('images'))
+        return ApiWipModelsViewSet.get_model_images(pk)
 
 
 class ApiWipUserModelStatusesViewSet(viewsets.ModelViewSet):
