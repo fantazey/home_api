@@ -1,5 +1,5 @@
-from rest_framework import serializers
-from datetime import date
+from rest_framework import serializers, fields
+from rest_framework.utils import html
 
 from .models import Model, UserModelStatus, ModelGroup, KillTeam, BSUnit, BSCategory, ModelProgress, ModelImage
 
@@ -44,25 +44,20 @@ class UserModelStatusSerializer(serializers.ModelSerializer):
         model = UserModelStatus
         fields = ['id', 'name', 'order', 'previous', 'next']
 
+    def get_value(self, dictionary):
+        if html.is_html_input(dictionary):
+            return self.get_value_for_multipart(dictionary) or fields.empty
+        return super().get_value(dictionary)
 
-#######
-
-
-class UserModelStatusIdSerializer(serializers.SlugRelatedField):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(**kwargs)
-
-    def get_queryset(self):
-        request = self.context['request']
-        return UserModelStatus.objects.filter(user=request.user)
-
-    class Meta:
-        model = UserModelStatus
-        fields = ['id']
+    def get_value_for_multipart(self, dictionary):
+        key = 'user_status'
+        user = self.context['request'].user
+        item = UserModelStatus.objects.get(id=dictionary.get(key), user=user)
+        return UserModelStatusSerializer(item).data
 
 
 class ModelSerializer(serializers.HyperlinkedModelSerializer):
+    id = serializers.IntegerField(read_only=True)
     user_status = UserModelStatusSerializer()
     groups = UserModelGroupSerializer(many=True)
     battlescribe_unit = BSUnitSerializer(required=False, allow_null=True)
@@ -86,14 +81,26 @@ class ModelSerializer(serializers.HyperlinkedModelSerializer):
             'hours_spent',
         ]
 
+    def get_value(self, dictionary):
+        if html.is_html_input(dictionary):
+            return self.get_value_for_multipart(dictionary) or fields.empty
+        return super().get_value(dictionary)
+
+    def get_value_for_multipart(self, dictionary):
+        key = 'model'
+        user = self.context['request'].user
+        item = Model.objects.get(id=dictionary.get(key), user=user)
+        return ModelSerializer(item).data
+
     def create(self, validated_data):
         request = self.context['request']
         user = request.user
-        bs_unit_data = validated_data.pop('bs_unit')
+        bs_unit_data = validated_data.pop('battlescribe_unit')
         kill_team_data = validated_data.pop('kill_team')
         groups_data = validated_data.pop('groups')
         status_data = validated_data.pop('user_status')
         model = Model(**validated_data)
+        model.user = user
         model.user_status = UserModelStatus.objects.get(id=status_data.get('id'), user=user)
 
         if groups_data is not None:
@@ -157,8 +164,11 @@ class ModelSerializer(serializers.HyperlinkedModelSerializer):
 
 
 class ModelProgressSerializer(serializers.HyperlinkedModelSerializer):
+    id = serializers.IntegerField(read_only=True)
     user_status = UserModelStatusSerializer()
     get_last_image_url = serializers.CharField(read_only=True)
+    description = serializers.CharField(required=False, allow_blank=True)
+    model = ModelSerializer(write_only=True)
 
     class Meta:
         model = ModelProgress
@@ -169,11 +179,40 @@ class ModelProgressSerializer(serializers.HyperlinkedModelSerializer):
             'datetime',
             'time',
             'get_last_image_url',
-            'user_status'
+            'user_status',
+            'model'
         ]
+
+    def create(self, validated_data):
+        request = self.context['request']
+        user = request.user
+        status_data = validated_data.pop('user_status')
+        model_data = validated_data.pop('model')
+        instance = ModelProgress(**validated_data)
+        instance.user_status = UserModelStatus.objects.get(id=status_data.get('id'), user=user)
+        instance.model = Model.objects.get(id=model_data.get('id'), user=user)
+        instance.save()
+        return instance
+
+    def update(self, instance: ModelProgress, validated_data):
+        request = self.context['request']
+        user = request.user
+
+        instance.title = validated_data.get('title', instance.title)
+        instance.description = validated_data.get('description', instance.description)
+        instance.time = validated_data.get('time', instance.time)
+        instance.datetime = validated_data.get('datetime', instance.datetime)
+
+        user_status_data: dict = validated_data.pop('user_status')
+        if user_status_data is not None:
+            instance.user_status = UserModelStatus.objects.get(id=user_status_data.get('id'), user=user)
+        instance.save()
+        return instance
 
 
 class ModelImageSerializer(serializers.HyperlinkedModelSerializer):
+    id = serializers.IntegerField()
+
     class Meta:
         model = ModelImage
         fields = [

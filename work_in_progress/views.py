@@ -12,9 +12,8 @@ from django.utils import timezone
 from django.views.generic import ListView, View
 from django.views.generic.edit import FormView
 
-from rest_framework import viewsets, permissions, authentication, pagination, parsers, status
+from rest_framework import viewsets, permissions, authentication, pagination, parsers, status, exceptions
 from rest_framework.response import Response
-from rest_framework.decorators import action
 from knox.views import LoginView as KnoxLoginView
 
 from .forms import AddModelForm, LoginForm, AddProgressForm, RegistrationForm, EditModelForm, \
@@ -23,7 +22,7 @@ from .forms import AddModelForm, LoginForm, AddProgressForm, RegistrationForm, E
 from .models import Model, ModelProgress, ModelImage, Artist, PaintInventory, Paint, PaintVendor, UserModelStatus, \
     StatusGroup, ModelGroup, BSCategory, BSUnit, KillTeam
 from .serializers import ModelSerializer, UserModelStatusSerializer, BSCategorySerializer, BSUnitSerializer, \
-    KillTeamSerializer, UserModelGroupSerializer, UserModelStatusIdSerializer, ModelProgressSerializer, \
+    KillTeamSerializer, UserModelGroupSerializer, ModelProgressSerializer, \
     ModelImageSerializer
 
 
@@ -789,14 +788,13 @@ class ApiWipModelsViewSet(viewsets.ModelViewSet):
     queryset = Model.objects.all()
     serializer_class = ModelSerializer
     pagination_class = ApiWipPagination
-    parser_classes = (parsers.MultiPartParser, )
+    parser_classes = (parsers.MultiPartParser, parsers.JSONParser)
     permission_classes = [permissions.IsAuthenticated]
     http_method_names = ['get', 'head', 'post', 'put']
 
     def get_queryset(self, *args, **kwargs):
         old_date = timezone.now() - datetime.timedelta(days=2000)
         models = super().get_queryset().annotate(last_record=Max('progress__datetime', default=old_date))\
-            .filter(user=self.request.user)\
             .order_by('-last_record', 'buy_date', 'created')
         groups = self.request.query_params.getlist("groups")
         statuses = self.request.query_params.getlist('user_status')
@@ -809,68 +807,117 @@ class ApiWipModelsViewSet(viewsets.ModelViewSet):
             models = models.filter(name__contains=name)
         return models
 
-    @action(methods=['get', 'post'], detail=True, permission_classes=[permissions.IsAuthenticated],
-            url_path='progress', url_name='model_progress')
-    def model_progress(self, request, pk=None):
-        if pk is None:
-            return None
-        if request.method == 'POST':
-            return self.post_model_progress(request, pk)
-        if request.method == 'GET':
-            return self.get_model_progress(request, pk)
-        return None
+    def update(self, request, *args, **kwargs):
+        model = Model.objects.get(id=int(kwargs['pk']))
+        if model.user != request.user:
+            raise exceptions.PermissionDenied(detail="Изменение чужой модели запрещено")
+        super().update(request, *args, **kwargs)
 
-    @staticmethod
-    def get_model_progress(request, pk=None):
-        model = Model.objects.get(id=int(pk))
-        items = ModelProgress.objects.filter(model=model).order_by('-datetime')
-        serialized = ModelProgressSerializer(items, many=True)
-        return Response(serialized.data)
 
-    @staticmethod
-    def post_model_progress(request, pk=None):
-        model = Model.objects.get(id=int(pk))
-        form_data = request.data
-        files = request.FILES.getlist('images')
-        form = AddProgressForm(form_data, user=request.user)
-        if form.is_valid():
-            progress = ModelProgress(model=model,
-                                     title=form.cleaned_data['title'],
-                                     description=form.cleaned_data['description'],
-                                     time=form.cleaned_data['time'],
-                                     user_status=form.cleaned_data['status'],
-                                     datetime=form.cleaned_data['date'])
-            progress.save()
-            progress.add_images(files)
-            serialized = ModelProgressSerializer(progress)
-            return Response(serialized.data)
-        errors = []
-        for k, v in form.errors.items():
-            errors.append({k: v})
-        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+class ApiWipModelProgressViewSet(viewsets.ModelViewSet):
+    queryset = ModelProgress.objects.all()
+    serializer_class = ModelProgressSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    http_method_names = ['get', 'head', 'post', 'put', 'delete']
 
-    @action(methods=['get', 'post'], detail=True, permission_classes=[permissions.IsAuthenticated],
-            url_path='images', url_name='model_images')
-    def model_images(self, request, pk=None):
-        if pk is None:
-            return None
-        if 'POST' == request.method:
-            return self.post_model_images(request, pk)
-        if 'GET' == request.method:
-            return self.get_model_images(pk)
+    def create(self, request, *args, **kwargs):
+        model = Model.objects.get(id=int(self.kwargs['model_pk']))
+        if model.user != request.user:
+            raise exceptions.PermissionDenied(detail="Изменение чужой модели запрещено")
 
-    @staticmethod
-    def get_model_images(pk=None):
-        model = Model.objects.get(id=int(pk))
-        items = ModelImage.objects.filter(model=model).order_by('-created')
-        serialized = ModelImageSerializer(items, many=True)
-        return Response(serialized.data)
+        # удаляем их из данных, так как файлы будем читать из request.FILES, а если их оставить -
+        # то нельзя толком скопировать QueryDict
+        if 'images' in request.data.keys():
+            request.data.pop('images')
 
-    @staticmethod
-    def post_model_images(request, pk=None):
-        model = Model.objects.get(id=int(pk))
-        model.add_images(request.FILES.getlist('images'))
-        return ApiWipModelsViewSet.get_model_images(pk)
+        data = request.data.copy()
+        if request.content_type == 'application/json':
+            data['model'] = ModelSerializer(model).data
+        else:
+            data['model'] = self.kwargs['model_pk']
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        instance = serializer.instance
+        instance.add_images(request.FILES.getlist('images', []))
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def update(self, request, *args, **kwargs):
+        model = Model.objects.get(id=int(self.kwargs['model_pk']))
+        if model.user != request.user:
+            raise exceptions.PermissionDenied(detail="Изменение чужой модели запрещено")
+
+        if 'images' in request.data.keys():
+            request.data.pop('images')
+
+        data = request.data.copy()
+        if request.content_type == 'application/json':
+            data['model'] = ModelSerializer(model).data
+        else:
+            data['model'] = self.kwargs['model_pk']
+
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        # удалить старые изображения
+        ModelImage.objects.filter(model=model, progress=serializer.instance).delete()
+
+        # перезаписать изображения новыми
+        serializer.instance.add_images(request.FILES.getlist('images'))
+        return Response(serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
+        model = Model.objects.get(id=int(self.kwargs['model_pk']))
+        if model.user != request.user:
+            raise exceptions.PermissionDenied(detail="Изменение чужой модели запрещено")
+        instance = ModelProgress.objects.get(id=int(self.kwargs['pk']), model=model)
+
+        images = ModelImage.objects.filter(model=model, progress=instance)
+        images.delete()
+        instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def get_queryset(self, *args, **kwargs):
+        return super().get_queryset()\
+            .filter(model_id=self.kwargs['model_pk'])\
+            .order_by('-datetime')
+
+
+class ApiWipModelImagesViewSet(viewsets.ModelViewSet):
+    queryset = ModelImage.objects.all()
+    serializer_class = ModelImageSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    http_method_names = ['get', 'head', 'post', 'delete']
+
+    def create(self, request, *args, **kwargs):
+        model = Model.objects.get(id=int(self.kwargs['model_pk']))
+        if model.user != request.user:
+            raise exceptions.PermissionDenied(detail="Изменение чужой модели запрещено")
+
+        images = []
+        for image_file in request.FILES.getlist('images', []):
+            image = ModelImage(model=model, image=image_file)
+            image.save()
+            images.append(image)
+
+        serializer = self.serializer_class(images, many=True)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def destroy(self, request, *args, **kwargs):
+        model = Model.objects.get(id=int(self.kwargs['model_pk']))
+        if model.user != request.user:
+            raise exceptions.PermissionDenied(detail="Изменение чужой модели запрещено")
+
+        instance = ModelImage.objects.get(id=int(self.kwargs['pk']), model=model)
+        instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def get_queryset(self, *args, **kwargs):
+        return super().get_queryset()\
+            .filter(model_id=self.kwargs['model_pk'])\
+            .order_by('-created')
 
 
 class ApiWipUserModelStatusesViewSet(viewsets.ModelViewSet):
@@ -894,7 +941,7 @@ class ApiWipBattleScribeUnitsViewSet(viewsets.ModelViewSet):
 
 class ApiWipBattleScribeCategoryViewSet(viewsets.ModelViewSet):
     queryset = BSCategory.objects.all()
-    serializer_class = UserModelStatusSerializer
+    serializer_class = BSCategorySerializer
     permission_classes = [permissions.IsAuthenticated]
     http_method_names = ['get', 'head']
 
