@@ -102,7 +102,7 @@ class ModelSerializer(serializers.HyperlinkedModelSerializer):
         model = Model(**validated_data)
         model.user = user
         model.user_status = UserModelStatus.objects.get(id=status_data.get('id'), user=user)
-
+        model.save()
         if groups_data is not None:
             model_group_id = []
             for model_group_data_item in groups_data:
@@ -212,6 +212,7 @@ class ModelProgressSerializer(serializers.HyperlinkedModelSerializer):
 
 class ModelImageSerializer(serializers.HyperlinkedModelSerializer):
     id = serializers.IntegerField()
+    image = serializers.CharField(source="image.url")
 
     class Meta:
         model = ModelImage

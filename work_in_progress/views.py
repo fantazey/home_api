@@ -811,7 +811,7 @@ class ApiWipModelsViewSet(viewsets.ModelViewSet):
         model = Model.objects.get(id=int(kwargs['pk']))
         if model.user != request.user:
             raise exceptions.PermissionDenied(detail="Изменение чужой модели запрещено")
-        super().update(request, *args, **kwargs)
+        return super().update(request, *args, **kwargs)
 
 
 class ApiWipModelProgressViewSet(viewsets.ModelViewSet):
