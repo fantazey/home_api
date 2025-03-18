@@ -831,10 +831,7 @@ class ApiWipModelProgressViewSet(viewsets.ModelViewSet):
             request.data.pop('images')
 
         data = request.data.copy()
-        if request.content_type == 'application/json':
-            data['model'] = ModelSerializer(model).data
-        else:
-            data['model'] = self.kwargs['model_pk']
+        data['model_id'] = self.kwargs['model_pk']
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
@@ -851,21 +848,21 @@ class ApiWipModelProgressViewSet(viewsets.ModelViewSet):
             request.data.pop('images')
 
         data = request.data.copy()
-        if request.content_type == 'application/json':
-            data['model'] = ModelSerializer(model).data
+        if 'application/json' in request.content_type:
+            resave_images = False
         else:
-            data['model'] = self.kwargs['model_pk']
+            resave_images = True
 
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=data, partial=partial)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
-        # удалить старые изображения
-        ModelImage.objects.filter(model=model, progress=serializer.instance).delete()
-
-        # перезаписать изображения новыми
-        serializer.instance.add_images(request.FILES.getlist('images'))
+        if resave_images:
+            # удалить старые изображения
+            ModelImage.objects.filter(model=model, progress=serializer.instance).delete()
+            # перезаписать изображения новыми
+            serializer.instance.add_images(request.FILES.getlist('images'))
         return Response(serializer.data)
 
     def destroy(self, request, *args, **kwargs):

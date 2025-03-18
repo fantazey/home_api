@@ -168,7 +168,7 @@ class ModelProgressSerializer(serializers.HyperlinkedModelSerializer):
     user_status = UserModelStatusSerializer()
     get_last_image_url = serializers.CharField(read_only=True)
     description = serializers.CharField(required=False, allow_blank=True)
-    model = ModelSerializer(write_only=True)
+    model_id = serializers.IntegerField(write_only=True)
 
     class Meta:
         model = ModelProgress
@@ -180,17 +180,17 @@ class ModelProgressSerializer(serializers.HyperlinkedModelSerializer):
             'time',
             'get_last_image_url',
             'user_status',
-            'model'
+            'model_id'
         ]
 
     def create(self, validated_data):
         request = self.context['request']
         user = request.user
         status_data = validated_data.pop('user_status')
-        model_data = validated_data.pop('model')
+        model_data = validated_data.pop('model_id')
         instance = ModelProgress(**validated_data)
         instance.user_status = UserModelStatus.objects.get(id=status_data.get('id'), user=user)
-        instance.model = Model.objects.get(id=model_data.get('id'), user=user)
+        instance.model = Model.objects.get(id=model_data, user=user)
         instance.save()
         return instance
 
