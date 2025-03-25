@@ -5,11 +5,32 @@ from .models import Model, UserModelStatus, ModelGroup, KillTeam, BSUnit, BSCate
 
 
 class UserModelGroupSerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField()
+    id = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = ModelGroup
         fields = ['id', 'name']
+
+    def create(self, validated_data):
+        record = ModelGroup(**validated_data)
+        record.user = self.context['request'].user
+        record.save()
+        return record
+
+
+class UserModelGroupIdPKField(serializers.PrimaryKeyRelatedField):
+    def get_queryset(self):
+        return ModelGroup.objects.filter(user=self.context['request'].user)
+
+
+class UserModelStatusIdPKField(serializers.PrimaryKeyRelatedField):
+    def get_queryset(self):
+        return UserModelStatus.objects.filter(user=self.context['request'].user)
+
+
+class ModelPKField(serializers.PrimaryKeyRelatedField):
+    def get_queryset(self):
+        return Model.objects.filter(user=self.context['request'].user)
 
 
 class BSCategorySerializer(serializers.ModelSerializer):
@@ -38,32 +59,49 @@ class KillTeamSerializer(serializers.ModelSerializer):
 
 
 class UserModelStatusSerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField()
+    id = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = UserModelStatus
-        fields = ['id', 'name', 'order', 'previous', 'next']
+        fields = ['id', 'name', 'order', 'previous', 'next', 'is_initial', 'is_final', 'transition_title']
 
-    def get_value(self, dictionary):
-        if html.is_html_input(dictionary):
-            return self.get_value_for_multipart(dictionary) or fields.empty
-        return super().get_value(dictionary)
+    def create(self, validated_data):
+        request = self.context['request']
+        user = request.user
+        record = UserModelStatus(**validated_data)
+        record.user = user
+        record.save()
+        return record
 
-    def get_value_for_multipart(self, dictionary):
-        key = 'user_status'
-        user = self.context['request'].user
-        item = UserModelStatus.objects.get(id=dictionary.get(key), user=user)
-        return UserModelStatusSerializer(item).data
+    def validate_previous(self, value):
+        if value is None:
+            return value
+        if value.user != self.context['request'].user:
+            raise serializers.ValidationError("Предыдущий статус относится к другому пользователю")
+        return value
+
+    def validate_next(self, value):
+        if value is None:
+            return value
+        if value.user != self.context['request'].user:
+            raise serializers.ValidationError("Следующий статус относится к другому пользователю")
+        return value
 
 
 class ModelSerializer(serializers.HyperlinkedModelSerializer):
     id = serializers.IntegerField(read_only=True)
-    user_status = UserModelStatusSerializer()
-    groups = UserModelGroupSerializer(many=True)
-    battlescribe_unit = BSUnitSerializer(required=False, allow_null=True)
-    kill_team = KillTeamSerializer(required=False, allow_null=True)
+    user_status = UserModelStatusSerializer(read_only=True)
+    groups = UserModelGroupSerializer(many=True, read_only=True)
+    battlescribe_unit = BSUnitSerializer(read_only=True)
+    kill_team = KillTeamSerializer(read_only=True)
+
     hours_spent = serializers.FloatField(read_only=True, source='get_hours_spent')
     get_last_image_url = serializers.CharField(read_only=True)
+
+    groups_id = UserModelGroupIdPKField(many=True, write_only=True)
+    user_status_id = UserModelStatusIdPKField(write_only=True)
+    kill_team_id = serializers.PrimaryKeyRelatedField(required=False, allow_null=True, write_only=True, queryset=KillTeam.objects.all())
+    battlescribe_unit_id = serializers.PrimaryKeyRelatedField(required=False, allow_null=True, write_only=True, queryset=BSUnit.objects.all())
 
     class Meta:
         model = Model
@@ -75,9 +113,13 @@ class ModelSerializer(serializers.HyperlinkedModelSerializer):
             'terrain',
             'get_last_image_url',
             'user_status',
+            'user_status_id',
             'groups',
+            'groups_id',
             'battlescribe_unit',
+            'battlescribe_unit_id',
             'kill_team',
+            'kill_team_id',
             'hours_spent',
         ]
 
@@ -92,83 +134,56 @@ class ModelSerializer(serializers.HyperlinkedModelSerializer):
         item = Model.objects.get(id=dictionary.get(key), user=user)
         return ModelSerializer(item).data
 
+    def validate_user_status_id(self, value):
+        if self.context['request'].user != value.user:
+            raise serializers.ValidationError("Нельзя использовать статус другого пользователя")
+        return value
+
     def create(self, validated_data):
-        request = self.context['request']
-        user = request.user
-        bs_unit_data = validated_data.pop('battlescribe_unit')
-        kill_team_data = validated_data.pop('kill_team')
-        groups_data = validated_data.pop('groups')
-        status_data = validated_data.pop('user_status')
-        model = Model(**validated_data)
-        model.user = user
-        model.user_status = UserModelStatus.objects.get(id=status_data.get('id'), user=user)
+        data = validated_data.copy()
+        data['user'] = self.context['request'].user
+        groups = []
+        if 'groups_id' in data:
+            groups = data.pop('groups_id')
+        if 'user_status_id' in data:
+            data['user_status'] = data.pop('user_status_id')
+        if 'kill_team_id' in data:
+            data['kill_team'] = data.pop('kill_team_id')
+        if 'battlescribe_unit_id' in data:
+            data['battlescribe_unit'] = data.pop('battlescribe_unit_id')
+        model = Model(**data)
         model.save()
-        if groups_data is not None:
-            model_group_id = []
-            for model_group_data_item in groups_data:
-                model_group_id.append(model_group_data_item.get('id'))
-            groups = ModelGroup.objects.filter(user=user, id__in=model_group_id)
-            for group in groups:
-                model.groups.add(group)
-
-        if bs_unit_data is not None:
-            model.battlescribe_unit = BSUnit.objects.get(id=bs_unit_data.get('id'))
-        else:
-            model.battlescribe_unit = None
-
-        if kill_team_data is not None:
-            model.kill_team = KillTeam.objects.get(id=kill_team_data.get('id'))
-        else:
-            model.kill_team = None
-
+        # чтобы сохранить м2м надо сперва сохранить объект
+        model.groups.set(groups)
         model.save()
         return model
 
     def update(self, instance: Model, validated_data):
-        request = self.context['request']
-        user = request.user
+        data = validated_data.copy()
+        groups = []
+        if 'groups_id' in data:
+            groups = data.pop('groups_id')
+        if 'user_status_id' in data:
+            data['user_status'] = data.pop('user_status_id')
+        if 'kill_team_id' in data:
+            data['kill_team'] = data.pop('kill_team_id')
+        if 'battlescribe_unit_id' in data:
+            data['battlescribe_unit'] = data.pop('battlescribe_unit_id')
 
-        instance.name = validated_data.get('name', instance.name)
-        instance.unit_count = validated_data.get('unit_count', instance.unit_count)
-        instance.terrain = validated_data.get('terrain', instance.terrain)
-        instance.buy_date = validated_data.get('buy_date', instance.buy_date)
-
-        user_status_data: dict = validated_data.pop('user_status')
-        if user_status_data is not None:
-            instance.user_status = UserModelStatus.objects.get(id=user_status_data.get('id'), user=user)
-
-        model_group_data: list = validated_data.pop('groups')
-        if model_group_data is not None:
-            model_group_id = []
-            for model_group_data_item in model_group_data:
-                model_group_id.append(model_group_data_item.get('id'))
-            groups = ModelGroup.objects.filter(user=user, id__in=model_group_id)
-            instance.groups.clear()
-            for group in groups:
-                instance.groups.add(group)
-
-        bs_unit_data = validated_data.pop("battlescribe_unit")
-        if bs_unit_data is not None:
-            instance.battlescribe_unit = BSUnit.objects.get(id=bs_unit_data.get('id'))
-        else:
-            instance.battlescribe_unit = None
-
-        kill_team_data = validated_data.pop("kill_team")
-        if kill_team_data is not None:
-            instance.kill_team = KillTeam.objects.get(id=kill_team_data.get('id'))
-        else:
-            instance.kill_team = None
-
+        for attr, value in data.items():
+            setattr(instance, attr, value)
+        instance.groups.set(groups)
         instance.save()
         return instance
 
 
 class ModelProgressSerializer(serializers.HyperlinkedModelSerializer):
     id = serializers.IntegerField(read_only=True)
-    user_status = UserModelStatusSerializer()
+    user_status = UserModelStatusSerializer(read_only=True)
     get_last_image_url = serializers.CharField(read_only=True)
     description = serializers.CharField(required=False, allow_blank=True)
-    model_id = serializers.IntegerField(write_only=True)
+    model_id = ModelPKField(write_only=True)
+    user_status_id = UserModelStatusIdPKField(write_only=True)
 
     class Meta:
         model = ModelProgress
@@ -180,35 +195,30 @@ class ModelProgressSerializer(serializers.HyperlinkedModelSerializer):
             'time',
             'get_last_image_url',
             'user_status',
-            'model_id'
+            'model_id',
+            'user_status_id',
         ]
 
     def create(self, validated_data):
-        request = self.context['request']
-        user = request.user
-        status_data = validated_data.pop('user_status')
-        model_data = validated_data.pop('model_id')
-        instance = ModelProgress(**validated_data)
-        instance.user_status = UserModelStatus.objects.get(id=status_data.get('id'), user=user)
-        instance.model = Model.objects.get(id=model_data, user=user)
+        data = validated_data.copy()
+        if 'user_status_id' in data:
+            data['user_status'] = data.pop('user_status_id')
+        if 'model_id' in data:
+            data['model'] = data.pop('model_id')
+        record = ModelProgress(**data)
+        record.save()
+        return record
+
+    def update(self, instance, validated_data):
+        data = validated_data.copy()
+        if 'user_status_id' in data:
+            data['user_status'] = data.pop('user_status_id')
+        if 'model_id' in data:
+            data['model'] = data.pop('model_id')
+        for attr, value in data.items():
+            setattr(instance, attr, value)
         instance.save()
         return instance
-
-    def update(self, instance: ModelProgress, validated_data):
-        request = self.context['request']
-        user = request.user
-
-        instance.title = validated_data.get('title', instance.title)
-        instance.description = validated_data.get('description', instance.description)
-        instance.time = validated_data.get('time', instance.time)
-        instance.datetime = validated_data.get('datetime', instance.datetime)
-
-        user_status_data: dict = validated_data.pop('user_status')
-        if user_status_data is not None:
-            instance.user_status = UserModelStatus.objects.get(id=user_status_data.get('id'), user=user)
-        instance.save()
-        return instance
-
 
 class ModelImageSerializer(serializers.HyperlinkedModelSerializer):
     id = serializers.IntegerField()

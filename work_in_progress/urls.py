@@ -24,6 +24,7 @@ router.register(r"kill-teams", views.ApiWipKillTeamViewSet)
 app_name = 'wip'
 urlpatterns = [
     # api
+    path('api/auth/signup/', views.ApiWipSignUpView.as_view(), name='api_signup'),
     path('api/auth/login/', views.ApiWipLoginView.as_view(), name='knox_login'),
     path('api/auth/logout/', knox_views.LogoutView.as_view(), name='knox_logout'),
     path('api/auth/logoutall/', knox_views.LogoutAllView.as_view(), name='knox_logoutall'),

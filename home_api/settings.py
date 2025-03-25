@@ -57,7 +57,7 @@ KNOX_TOKEN_MODEL = 'knox.AuthToken'
 REST_KNOX = {
   'SECURE_HASH_ALGORITHM': 'hashlib.sha512',
   'AUTH_TOKEN_CHARACTER_LENGTH': 64,
-  'TOKEN_TTL': timedelta(hours=10),
+  'TOKEN_TTL': timedelta(hours=24),
   'USER_SERIALIZER': 'knox.serializers.UserSerializer',
   'TOKEN_LIMIT_PER_USER': 30,
   'AUTO_REFRESH': False,
