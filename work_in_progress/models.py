@@ -215,7 +215,7 @@ class ModelImage(models.Model):
 
 class Artist(models.Model):
     user = models.OneToOneField(User, verbose_name="Пользователь", on_delete=models.RESTRICT)
-    telegram_name = models.CharField(verbose_name="Ник в телеге", max_length=200, unique=True)
+    telegram_name = models.CharField(verbose_name="Ник в телеге", max_length=200, null=True, blank=True)
 
     class Meta:
         verbose_name = "Красильщик"
